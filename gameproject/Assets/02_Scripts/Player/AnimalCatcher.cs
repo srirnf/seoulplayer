@@ -2,13 +2,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// 플레이어(사육사). WASD로 이동하고, 가장 가까운 자유 동물을 자동 록온한 뒤
-// Space를 꾹 눌러 유인 게이지를 채운다. 꼬셔진 동물은 줄줄이 따라온다.
+// 플레이어(사육사). 좌우(A/D) 이동. 동물 근처에서 Space를 길게 눌러 충전 게이지를 채우면 록온,
+// 떼면 타이밍 바가 뜨고, 마커가 초록일 때 Space를 누르면 꼬셔진다(따라옴). 실패 시 도망.
 public class AnimalCatcher : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 4.5f;
     [Tooltip("자동 록온 범위")]
     [SerializeField] private float lockRange = 3f;
+    [Tooltip("록온까지 Space를 누르고 있어야 하는 시간(초)")]
+    [SerializeField] private float lockChargeTime = 0.6f;
 
     private readonly List<Animal> caughtChain = new List<Animal>();
     private Animal locked;
@@ -17,13 +19,16 @@ public class AnimalCatcher : MonoBehaviour
     private float minX = float.NegativeInfinity;
     private float maxX = float.PositiveInfinity;
 
+    private enum Phase { Idle, Charging, Locked, Timing }
+    private Phase phase = Phase.Idle;
+    private float charge;
+
     private void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
         groundY = transform.position.y;
     }
 
-    // 배경 밖으로 못 나가게 좌우 이동 한계 설정
     public void SetBounds(float min, float max)
     {
         minX = min;
@@ -36,10 +41,9 @@ public class AnimalCatcher : MonoBehaviour
         if (gm != null && !gm.IsPlaying) return;
 
         Move();
-        UpdateLockAndLure();
+        UpdateCatch();
     }
 
-    // 사이드뷰: 좌우로만 이동(A/D 또는 ←/→). y는 바닥 라인에 고정.
     private void Move()
     {
         var kb = Keyboard.current;
@@ -57,20 +61,16 @@ public class AnimalCatcher : MonoBehaviour
         if (sr != null && x != 0f) sr.flipX = x < 0f;
     }
 
-    private enum Phase { Idle, Locking, Timing }
-    private Phase phase = Phase.Idle;
-
-    // 1) Space 홀드 → 가까운 동물 록온(테두리)
-    // 2) Space 떼기 → 타이밍 바 등장(마커 이동)
-    // 3) 타이밍 중 Space 누르기 → 초록이면 잡고, 아니면 도망
-    private void UpdateLockAndLure()
+    private void UpdateCatch()
     {
         var kb = Keyboard.current;
+        bool held = kb != null && kb.spaceKey.isPressed;
+        bool pressed = kb != null && kb.spaceKey.wasPressedThisFrame;
 
         switch (phase)
         {
             case Phase.Idle:
-                if (kb != null && kb.spaceKey.wasPressedThisFrame)
+                if (pressed)
                 {
                     Animal cand = ParkGameManager.Instance != null
                         ? ParkGameManager.Instance.GetNearestFreeAnimal(transform.position, lockRange)
@@ -78,16 +78,45 @@ public class AnimalCatcher : MonoBehaviour
                     if (cand != null)
                     {
                         locked = cand;
-                        locked.SetLocked(true);
-                        phase = Phase.Locking;
+                        locked.SetTargeted(true);
+                        charge = 0f;
+                        locked.SetLockCharge(0f);
+                        phase = Phase.Charging;
                     }
                 }
                 break;
 
-            case Phase.Locking:
+            case Phase.Charging:
                 if (locked == null) { phase = Phase.Idle; break; }
-                if (kb == null || !kb.spaceKey.isPressed) // 떼면 타이밍 시작
+                if (held)
                 {
+                    charge += Time.deltaTime / Mathf.Max(0.01f, lockChargeTime);
+                    if (charge >= 1f)
+                    {
+                        charge = 1f;
+                        locked.SetLockCharge(1f);
+                        phase = Phase.Locked; // 충전 완료 = 록온
+                    }
+                    else
+                    {
+                        locked.SetLockCharge(charge);
+                    }
+                }
+                else
+                {
+                    // 다 차기 전에 떼면 취소
+                    locked.SetTargeted(false);
+                    locked.SetLockCharge(-1f);
+                    locked = null;
+                    phase = Phase.Idle;
+                }
+                break;
+
+            case Phase.Locked:
+                if (locked == null) { phase = Phase.Idle; break; }
+                if (!held) // 떼면 타이밍 시작
+                {
+                    locked.SetLockCharge(-1f);
                     locked.SetTiming(true);
                     phase = Phase.Timing;
                 }
@@ -95,7 +124,7 @@ public class AnimalCatcher : MonoBehaviour
 
             case Phase.Timing:
                 if (locked == null) { phase = Phase.Idle; break; }
-                if (kb != null && kb.spaceKey.wasPressedThisFrame) // 다시 누르면 판정
+                if (pressed) // 초록일 때 누르면 잡기, 아니면 도망
                 {
                     bool hit = locked.AttemptTiming(transform.position);
                     if (hit) CatchAnimal(locked);
@@ -108,11 +137,9 @@ public class AnimalCatcher : MonoBehaviour
 
     private void CatchAnimal(Animal a)
     {
-        // 첫 동물은 플레이어를, 이후엔 줄의 맨 뒤 동물을 따라간다(줄줄이)
         Transform target = caughtChain.Count == 0 ? transform : caughtChain[caughtChain.Count - 1].transform;
         a.Catch(target);
         caughtChain.Add(a);
-        if (locked == a) locked = null;
         ParkGameManager.Instance?.OnAnimalCaught(a);
     }
 }

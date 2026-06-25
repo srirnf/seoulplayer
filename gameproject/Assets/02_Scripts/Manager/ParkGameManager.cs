@@ -28,9 +28,16 @@ public class ParkGameManager : MonoBehaviour
         allAnimals.AddRange(FindObjectsByType<Animal>(FindObjectsSortMode.None));
         caughtCount = 0;
         Elapsed = 0f;
-        IsPlaying = true;
+        IsPlaying = false; // 게임방법 안내 확인 전까지 대기
         ParkUIManager.Instance?.UpdateCaught(0, allAnimals.Count);
         ParkUIManager.Instance?.UpdateTimer(0f);
+    }
+
+    // 안내 화면에서 확인을 누르면 시작
+    public void BeginGame()
+    {
+        Elapsed = 0f;
+        IsPlaying = true;
     }
 
     private void Update()

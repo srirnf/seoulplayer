@@ -24,9 +24,13 @@ public static class ParkSceneBuilder
         EnsureFolder("Assets", "01_Scenes");
 
         Sprite playerS = MakeSprite("keeper", 70, 130, "#3f7bd6", "#274f8a", SpriteAlignment.BottomCenter);
-        Sprite trackS = MakeSprite("timing_track", 120, 16, "#1e1e1e", "#000000");
-        Sprite zoneS = MakeSprite("timing_zone", 28, 16, "#5fd06a", "#3a9c45");
-        Sprite markerS = MakeSprite("timing_marker", 8, 28, "#ffffff", "#d03030");
+        // 록온 선택 링 + 충전 게이지 + 타이밍 바 (둥글고 크게)
+        Sprite ringS = MakeRing("sel_ring", 128, 12, "#ffce2e");
+        Sprite chargeTrackS = MakeRoundedFill("charge_track", 150, 24, "#222831", SpriteAlignment.Center);
+        Sprite chargeFillS = MakeRoundedFill("charge_fill", 150, 24, "#ffcf3f", SpriteAlignment.LeftCenter);
+        Sprite trackS = MakeRoundedFill("timing_track", 220, 34, "#222831", SpriteAlignment.Center);
+        Sprite zoneS = MakeRoundedFill("timing_zone", 48, 34, "#5fd06a", SpriteAlignment.Center);
+        Sprite markerS = MakeRoundedFill("timing_marker", 14, 50, "#ff5a5a", SpriteAlignment.Center);
 
         // 실제 동물 이미지 (Assets/04_Sprites/Animals/*.png)
         var animals = new (string name, string file)[]
@@ -97,7 +101,7 @@ public static class ParkSceneBuilder
         {
             float x = Mathf.Lerp(leftEdge, rightEdge, (i + 0.5f) / animals.Length);
             Sprite body = ImportSprite($"Assets/04_Sprites/Animals/{animals[i].file}.png", SpriteAlignment.BottomCenter, 650f, 2048);
-            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, trackS, zoneS, markerS);
+            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, ringS, chargeTrackS, chargeFillS, trackS, zoneS, markerS);
         }
 
         // 매니저
@@ -132,18 +136,6 @@ public static class ParkSceneBuilder
         var timerText = MakeText("Text", timerPill.transform, "0.0초", 40, TextAlignmentOptions.Center,
             Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, textLight);
 
-        // 다시하기(우상단, 시간 아래)
-        var hudRestart = MakePrettyButton("RestartButton", canvasGO.transform, round, "다시하기",
-            new Color(0.32f, 0.56f, 0.86f, 0.96f),
-            new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-36, -120), new Vector2(170, 62));
-        UnityEventTools.AddPersistentListener(hudRestart.GetComponent<Button>().onClick, gm.Restart);
-
-        // 안내(하단 알약)
-        var hintPill = MakeSliced("HintPill", canvasGO.transform, round, new Color(0.12f, 0.14f, 0.18f, 0.72f),
-            new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 34), new Vector2(1080, 70));
-        MakeText("Text", hintPill.transform, "← → (A/D) 이동  ·  Space 길게=록온, 떼면 타이밍 바, 마커 초록일 때 Space!", 28, TextAlignmentOptions.Center,
-            new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(-40, 0), textLight);
-
         // 엔딩 전환 오버레이
         var ending = MakePanel("EndingTransition", canvasGO.transform, new Color(0f, 0f, 0f, 0.55f),
             Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
@@ -174,6 +166,29 @@ public static class ParkSceneBuilder
         SetRef(ui, "clearPanel", clearPanel);
         SetRef(ui, "clearTimeText", clearTime);
 
+        // ===== 게임방법 안내 시작 화면 =====
+        var howTo = MakePanel("HowToPanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.62f),
+            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        var htCard = MakeSliced("Card", howTo.transform, round, new Color(0.99f, 0.97f, 0.90f, 1f),
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(940, 600));
+        MakeText("Title", htCard.transform, "동물꼬시기 — 게임 방법", 56, TextAlignmentOptions.Center,
+            new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(0, -46), new Vector2(0, 100), new Color(0.16f, 0.46f, 0.26f));
+        MakeText("Body", htCard.transform,
+            "서울어린이대공원에서 탈출한 동물들을 다시 우리로!\n\n" +
+            "· ← → (또는 A / D) 로 좌우 이동\n" +
+            "· 동물 가까이서 Space 를 길게 눌러 충전 → 록온\n" +
+            "· 록온되면 Space 를 떼면 타이밍 바 등장\n" +
+            "· 빨간 마커가 초록 구간일 때 Space! → 성공하면 따라옴\n" +
+            "· 타이밍 실패 시 동물이 잠깐 도망가요\n\n" +
+            "모든 동물을 모으면 클리어! (걸린 시간 기록)",
+            32, TextAlignmentOptions.TopLeft,
+            new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(0, 20), new Vector2(-100, -220), new Color(0.25f, 0.22f, 0.18f));
+        var startBtn = MakePrettyButton("StartButton", htCard.transform, round, "게임 시작",
+            new Color(0.30f, 0.62f, 0.36f, 1f),
+            new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 46), new Vector2(320, 96));
+        UnityEventTools.AddPersistentListener(startBtn.GetComponent<Button>().onClick, ui.CloseHowToAndStart);
+        SetRef(ui, "howToPanel", howTo);
+
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
         AddSceneToBuildSettings(ScenePath);
@@ -183,12 +198,13 @@ public static class ParkSceneBuilder
         EditorUtility.DisplayDialog("완료",
             "서울대공원(동물꼬시기) 플레이 씬 생성 완료!\n\n" +
             "01_Scenes/ParkGame 이 열려 있습니다. ▶ Play!\n\n" +
-            "WASD 이동 → 가까운 동물 자동 록온 → Space 꾹 눌러 꼬시기\n" +
-            "다 모으면 동물들이 우리로 들어가는 엔딩!", "확인");
+            "시작화면에서 게임시작 → A/D 이동 → Space 길게 충전 록온 →\n" +
+            "떼면 타이밍 바 → 초록일 때 Space! → 다 모으면 클리어", "확인");
         Debug.Log("[ParkSceneBuilder] 씬 생성 완료: " + ScenePath);
     }
 
-    private static void BuildAnimal(string name, Vector3 pos, Sprite body, Sprite trackS, Sprite zoneS, Sprite markerS)
+    private static void BuildAnimal(string name, Vector3 pos, Sprite body, Sprite ringS,
+        Sprite chargeTrackS, Sprite chargeFillS, Sprite trackS, Sprite zoneS, Sprite markerS)
     {
         var go = new GameObject("Animal_" + name);
         go.transform.position = pos;
@@ -198,47 +214,57 @@ public static class ParkSceneBuilder
         var animal = go.AddComponent<Animal>();
 
         float h = body != null ? body.bounds.size.y : 1f;
+        float w = body != null ? body.bounds.size.x : 1f;
 
-        // 록온 테두리: 같은 스프라이트를 뒤에 굵게 깔아 노란 실루엣 외곽선
-        const float outlineScale = 1.22f;
-        var outline = new GameObject("Outline");
-        outline.transform.SetParent(go.transform, false);
-        outline.transform.localScale = Vector3.one * outlineScale;
-        outline.transform.localPosition = new Vector3(0f, -(outlineScale - 1f) * 0.5f * h, 0f); // 바닥피벗 보정
-        var osr = outline.AddComponent<SpriteRenderer>();
-        osr.sprite = body;
-        osr.color = new Color(1f, 0.82f, 0f, 1f); // 진한 노랑
-        osr.sortingOrder = -1;
-        outline.SetActive(false);
+        // 록온 선택 링(동물 둘레) - 이미지 복사가 아닌 별도 링 스프라이트
+        var ring = new GameObject("SelectionRing");
+        ring.transform.SetParent(go.transform, false);
+        ring.transform.localPosition = new Vector3(0f, h * 0.5f, 0f);
+        float ringScale = Mathf.Max(w, h) * 1.35f / 1.28f; // 링 원본 1.28유닛(128px) 기준
+        ring.transform.localScale = Vector3.one * ringScale;
+        var rsr = ring.AddComponent<SpriteRenderer>();
+        rsr.sprite = ringS;
+        rsr.sortingOrder = -1;
+        ring.SetActive(false);
+
+        // 충전 게이지(머리 위)
+        var charge = new GameObject("ChargeGauge");
+        charge.transform.SetParent(go.transform, false);
+        charge.transform.localPosition = new Vector3(0f, h + 0.22f, 0f);
+        var ctrack = new GameObject("Track");
+        ctrack.transform.SetParent(charge.transform, false);
+        var ctsr = ctrack.AddComponent<SpriteRenderer>();
+        ctsr.sprite = chargeTrackS; ctsr.sortingOrder = 5;
+        var cfill = new GameObject("Fill");
+        cfill.transform.SetParent(charge.transform, false);
+        cfill.transform.localPosition = new Vector3(-0.75f, 0f, 0.01f); // 트랙 폭 150px=1.5, 왼쪽 끝
+        var cfsr = cfill.AddComponent<SpriteRenderer>();
+        cfsr.sprite = chargeFillS; cfsr.sortingOrder = 6;
+        charge.SetActive(false);
 
         // 타이밍 바(머리 위): 트랙 + 성공구간(초록) + 마커
         var bar = new GameObject("TimingBar");
         bar.transform.SetParent(go.transform, false);
-        bar.transform.localPosition = new Vector3(0f, h + 0.2f, 0f);
-
+        bar.transform.localPosition = new Vector3(0f, h + 0.22f, 0f);
         var track = new GameObject("Track");
         track.transform.SetParent(bar.transform, false);
         var tsr = track.AddComponent<SpriteRenderer>();
-        tsr.sprite = trackS;
-        tsr.sortingOrder = 5;
-
+        tsr.sprite = trackS; tsr.sortingOrder = 5;
         var zone = new GameObject("Zone");
         zone.transform.SetParent(bar.transform, false);
         zone.transform.localPosition = new Vector3(0f, 0f, 0.01f);
         var zsr = zone.AddComponent<SpriteRenderer>();
-        zsr.sprite = zoneS;
-        zsr.sortingOrder = 6;
-
+        zsr.sprite = zoneS; zsr.sortingOrder = 6;
         var marker = new GameObject("Marker");
         marker.transform.SetParent(bar.transform, false);
         marker.transform.localPosition = new Vector3(0f, 0f, 0.02f);
         var msr = marker.AddComponent<SpriteRenderer>();
-        msr.sprite = markerS;
-        msr.sortingOrder = 7;
-
+        msr.sprite = markerS; msr.sortingOrder = 7;
         bar.SetActive(false);
 
-        SetRef(animal, "lockIndicator", outline);
+        SetRef(animal, "selectionRing", ring);
+        SetRef(animal, "chargeRoot", charge);
+        SetRef(animal, "chargeFill", cfill.transform);
         SetRef(animal, "timingBar", bar);
         SetRef(animal, "marker", marker.transform);
     }
@@ -329,6 +355,74 @@ public static class ParkSceneBuilder
         float cy = Mathf.Clamp(y, r, size - 1 - r);
         float dx = x - cx, dy = y - cy;
         return dx * dx + dy * dy <= (float)r * r;
+    }
+
+    // 둥근(알약) 채워진 월드 스프라이트 (게이지/바용). align으로 피벗 지정.
+    private static Sprite MakeRoundedFill(string name, int w, int h, string fillHex, SpriteAlignment align)
+    {
+        string path = $"{SpriteDir}/{name}.png";
+        ColorUtility.TryParseHtmlString(fillHex, out Color fill);
+        Color clear = new Color(fill.r, fill.g, fill.b, 0f);
+        int r = Mathf.Min(w, h) / 2;
+        var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        var px = new Color[w * h];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                float cx = Mathf.Clamp(x, r, w - 1 - r);
+                float cy = Mathf.Clamp(y, r, h - 1 - r);
+                float dx = x - cx, dy = y - cy;
+                px[y * w + x] = (dx * dx + dy * dy <= (float)r * r) ? fill : clear;
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+        ApplySpriteImport(path, align);
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    // 링(도넛) 월드 스프라이트 (록온 표시용)
+    private static Sprite MakeRing(string name, int size, int thickness, string fillHex)
+    {
+        string path = $"{SpriteDir}/{name}.png";
+        ColorUtility.TryParseHtmlString(fillHex, out Color fill);
+        Color clear = new Color(fill.r, fill.g, fill.b, 0f);
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var px = new Color[size * size];
+        float c = (size - 1) * 0.5f;
+        float outer = size * 0.5f - 1f;
+        float inner = outer - thickness;
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dx = x - c, dy = y - c;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
+                px[y * size + x] = (d <= outer && d >= inner) ? fill : clear;
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+        ApplySpriteImport(path, SpriteAlignment.Center);
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    private static void ApplySpriteImport(string path, SpriteAlignment align)
+    {
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        var imp = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (imp == null) return;
+        imp.textureType = TextureImporterType.Sprite;
+        imp.spriteImportMode = SpriteImportMode.Single;
+        imp.spritePixelsPerUnit = 100;
+        imp.filterMode = FilterMode.Bilinear;
+        imp.mipmapEnabled = false;
+        var s = new TextureImporterSettings();
+        imp.ReadTextureSettings(s);
+        s.spriteAlignment = (int)align;
+        imp.SetTextureSettings(s);
+        imp.SaveAndReimport();
     }
 
     private static TextMeshProUGUI MakeText(string name, Transform parent, string text, float size,

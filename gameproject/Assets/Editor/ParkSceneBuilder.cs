@@ -32,6 +32,7 @@ public static class ParkSceneBuilder
         Sprite zoneS = MakeRoundedFill("timing_zone", 144, 102, "#5fd06a", SpriteAlignment.Center, 300f);
         Sprite markerS = MakeRoundedFill("timing_marker", 42, 150, "#ff5a5a", SpriteAlignment.Center, 300f);
         Sprite mashFillS = MakeRoundedFill("mash_fill", 450, 72, "#ff9a3c", SpriteAlignment.LeftCenter, 300f);
+        Sprite arrowS = MakeTriangle("arrow_tri", 96, "#ffffff", 280f);
 
         // 실제 동물 이미지 (Assets/04_Sprites/Animals/*.png)
         var animals = new (string name, string file)[]
@@ -102,7 +103,7 @@ public static class ParkSceneBuilder
         {
             float x = Mathf.Lerp(leftEdge, rightEdge, (i + 0.5f) / animals.Length);
             Sprite body = ImportSprite($"Assets/04_Sprites/Animals/{animals[i].file}.png", SpriteAlignment.BottomCenter, 650f, 2048);
-            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, ringS, chargeTrackS, chargeFillS, trackS, zoneS, markerS, mashFillS, leftEdge, rightEdge);
+            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, ringS, chargeTrackS, chargeFillS, trackS, zoneS, markerS, mashFillS, arrowS, leftEdge, rightEdge);
         }
 
         // 매니저
@@ -167,30 +168,75 @@ public static class ParkSceneBuilder
         SetRef(ui, "clearPanel", clearPanel);
         SetRef(ui, "clearTimeText", clearTime);
 
-        // ===== 게임방법 안내 시작 화면 =====
+        // ===== 게임방법 안내 시작 화면 (슬라이드) =====
         var howTo = MakePanel("HowToPanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.62f),
             Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         var htCard = MakeSliced("Card", howTo.transform, round, new Color(0.99f, 0.97f, 0.90f, 1f),
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(960, 680));
-        // 제목(상단 고정 박스)
-        MakeText("Title", htCard.transform, "동물꼬시기 — 게임 방법", 52, TextAlignmentOptions.Center,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 268), new Vector2(900, 90), new Color(0.16f, 0.46f, 0.26f));
-        // 본문(가운데 고정 박스, 제목/버튼과 겹치지 않음)
-        MakeText("Body", htCard.transform,
-            "서울어린이대공원에서 탈출한 동물들을 다시 우리로!\n\n" +
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000, 720));
+        Color brown = new Color(0.27f, 0.23f, 0.18f);
+        Color green = new Color(0.16f, 0.46f, 0.26f);
+        Vector2 C = new Vector2(0.5f, 0.5f);
+
+        var slideList = new Object[5];
+
+        // 0) 개요
+        var s0 = MakeSlide(htCard.transform, "동물꼬시기", green,
+            "서울어린이대공원에서 탈출한 동물들을 다시 우리로 보내자!\n\n" +
             "· ← → (또는 A / D) 로 좌우 이동\n" +
             "· 동물 가까이서 Space 를 길게 눌러 충전 → 록온\n" +
-            "· 떼면 미니게임이 랜덤으로 등장!\n" +
-            "   타이밍 · 움직이는 초록칸 · 연타 (Space)\n" +
+            "· 떼면 미니게임이 랜덤으로 등장 (▶ 로 넘겨보세요)\n" +
             "· 성공하면 따라오고, 실패하면 잠깐 도망가요\n" +
-            "· 동물을 모을수록 미니게임이 어려워져요!\n\n" +
-            "모든 동물을 모으면 클리어! (걸린 시간 기록)",
-            28, TextAlignmentOptions.TopLeft,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 10), new Vector2(840, 380), new Color(0.25f, 0.22f, 0.18f));
-        // 시작 버튼(하단 고정)
+            "· 동물을 모을수록 미니게임이 어려워져요\n\n" +
+            "모든 동물을 모으면 클리어! (걸린 시간 기록)", brown);
+        slideList[0] = s0;
+
+        // 1) 타이밍
+        var s1 = MakeSlide(htCard.transform, "① 타이밍", green,
+            "빨간 마커가 좌우로 움직여요.\n초록 구간에 왔을 때 Space 를 누르세요!", brown);
+        IllustBar(s1.transform, round);
+        MakeSliced("Zone", s1.transform, round, new Color(0.37f, 0.81f, 0.45f), C, C, C, new Vector2(0, -70), new Vector2(150, 66));
+        MakeSliced("Marker", s1.transform, round, new Color(1f, 0.35f, 0.35f), C, C, C, new Vector2(0, -70), new Vector2(18, 96));
+        slideList[1] = s1;
+
+        // 2) 움직이는 초록칸
+        var s2 = MakeSlide(htCard.transform, "② 움직이는 초록칸", green,
+            "마커는 가운데 고정! 초록칸이 움직여요.\n초록칸이 가운데 마커에 올 때 Space!", brown);
+        IllustBar(s2.transform, round);
+        MakeSliced("Zone", s2.transform, round, new Color(0.37f, 0.81f, 0.45f), C, C, C, new Vector2(-150, -70), new Vector2(150, 66));
+        MakeSliced("Marker", s2.transform, round, new Color(1f, 0.35f, 0.35f), C, C, C, new Vector2(0, -70), new Vector2(18, 96));
+        slideList[2] = s2;
+
+        // 3) 연타
+        var s3 = MakeSlide(htCard.transform, "③ 연타", green,
+            "Space 를 빠르게 연타해서\n주황 게이지를 가득 채우세요! (안 누르면 줄어들어요)", brown);
+        IllustBar(s3.transform, round);
+        MakeSliced("Fill", s3.transform, round, new Color(1f, 0.6f, 0.24f), C, C, C, new Vector2(-130, -70), new Vector2(320, 66));
+        slideList[3] = s3;
+
+        // 4) 방향키 순서
+        var s4 = MakeSlide(htCard.transform, "④ 방향키 순서", green,
+            "화면에 뜬 화살표 순서대로\n방향키(↑ ↓ ← →)를 눌러요!", brown);
+        MakeText("Arrows", s4.transform, "↑   →   ↓   ←", 70, TextAlignmentOptions.Center,
+            C, C, C, new Vector2(0, -70), new Vector2(740, 130), green);
+        slideList[4] = s4;
+
+        // 카운터 + 네비게이션 버튼
+        var counter = MakeText("Counter", htCard.transform, "1 / 5", 30, TextAlignmentOptions.Center,
+            C, C, C, new Vector2(0, -228), new Vector2(220, 50), brown);
+        var prevBtn = MakePrettyButton("PrevButton", htCard.transform, round, "이전",
+            new Color(0.55f, 0.55f, 0.58f, 1f), C, C, C, new Vector2(-410, -30), new Vector2(130, 84));
+        var nextBtn = MakePrettyButton("NextButton", htCard.transform, round, "다음",
+            new Color(0.32f, 0.56f, 0.86f, 1f), C, C, C, new Vector2(410, -30), new Vector2(130, 84));
         var startBtn = MakePrettyButton("StartButton", htCard.transform, round, "게임 시작",
-            new Color(0.30f, 0.62f, 0.36f, 1f),
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -278), new Vector2(340, 96));
+            new Color(0.30f, 0.62f, 0.36f, 1f), C, C, C, new Vector2(0, -300), new Vector2(340, 92));
+
+        var slidesComp = howTo.AddComponent<HowToSlides>();
+        SetArray(slidesComp, "slides", slideList);
+        SetRef(slidesComp, "counter", counter);
+        SetRef(slidesComp, "prevButton", prevBtn);
+        SetRef(slidesComp, "nextButton", nextBtn);
+        UnityEventTools.AddPersistentListener(prevBtn.GetComponent<Button>().onClick, slidesComp.Prev);
+        UnityEventTools.AddPersistentListener(nextBtn.GetComponent<Button>().onClick, slidesComp.Next);
         UnityEventTools.AddPersistentListener(startBtn.GetComponent<Button>().onClick, ui.CloseHowToAndStart);
         SetRef(ui, "howToPanel", howTo);
 
@@ -210,7 +256,7 @@ public static class ParkSceneBuilder
 
     private static void BuildAnimal(string name, Vector3 pos, Sprite body, Sprite ringS,
         Sprite chargeTrackS, Sprite chargeFillS, Sprite trackS, Sprite zoneS, Sprite markerS,
-        Sprite mashFillS, float minBound, float maxBound)
+        Sprite mashFillS, Sprite arrowS, float minBound, float maxBound)
     {
         var go = new GameObject("Animal_" + name);
         go.transform.position = pos;
@@ -284,6 +330,23 @@ public static class ParkSceneBuilder
         mfsr.sprite = mashFillS; mfsr.sortingOrder = 6;
         mash.SetActive(false);
 
+        // 방향키 게임: 화살표 4슬롯(머리 위)
+        var arrows = new GameObject("ArrowRow");
+        arrows.transform.SetParent(go.transform, false);
+        arrows.transform.localPosition = new Vector3(0f, h + 0.32f, 0f);
+        var slots = new Object[4];
+        for (int i = 0; i < 4; i++)
+        {
+            var slot = new GameObject("Arrow" + i);
+            slot.transform.SetParent(arrows.transform, false);
+            slot.transform.localPosition = new Vector3((i - 1.5f) * 0.45f, 0f, 0f);
+            var asr = slot.AddComponent<SpriteRenderer>();
+            asr.sprite = arrowS;
+            asr.sortingOrder = 6;
+            slots[i] = asr;
+        }
+        arrows.SetActive(false);
+
         SetRef(animal, "selectionRing", ring);
         SetRef(animal, "chargeRoot", charge);
         SetRef(animal, "chargeFill", cfill.transform);
@@ -292,6 +355,8 @@ public static class ParkSceneBuilder
         SetRef(animal, "marker", marker.transform);
         SetRef(animal, "mashRoot", mash);
         SetRef(animal, "mashFill", mfill.transform);
+        SetRef(animal, "arrowRoot", arrows);
+        SetArray(animal, "arrowSlots", slots);
     }
 
     // ---------- 헬퍼 ----------
@@ -304,6 +369,27 @@ public static class ParkSceneBuilder
         SetRect(go, aMin, aMax, pivot, pos, size);
         go.GetComponent<Image>().color = color;
         return go;
+    }
+
+    // 슬라이드 한 장(제목 + 설명). 그림은 호출 측에서 추가.
+    private static GameObject MakeSlide(Transform parent, string title, Color titleColor, string body, Color bodyColor)
+    {
+        Vector2 C = new Vector2(0.5f, 0.5f);
+        var s = new GameObject("Slide", typeof(RectTransform));
+        s.transform.SetParent(parent, false);
+        SetRect(s, C, C, C, Vector2.zero, new Vector2(1000, 720));
+        MakeText("Title", s.transform, title, 50, TextAlignmentOptions.Center,
+            C, C, C, new Vector2(0, 288), new Vector2(900, 90), titleColor);
+        MakeText("Body", s.transform, body, 28, TextAlignmentOptions.Center,
+            C, C, C, new Vector2(0, 130), new Vector2(880, 240), bodyColor);
+        return s;
+    }
+
+    private static void IllustBar(Transform slide, Sprite round)
+    {
+        Vector2 C = new Vector2(0.5f, 0.5f);
+        MakeSliced("Bar", slide, round, new Color(0.16f, 0.17f, 0.21f, 1f),
+            C, C, C, new Vector2(0, -70), new Vector2(560, 66));
     }
 
     private static Image MakeSliced(string name, Transform parent, Sprite sprite, Color color,
@@ -444,6 +530,43 @@ public static class ParkSceneBuilder
         Object.DestroyImmediate(tex);
         ApplySpriteImport(path, SpriteAlignment.Center, ppu);
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    // 위쪽을 향한 삼각형(화살표용) - 회전해서 4방향으로 사용
+    private static Sprite MakeTriangle(string name, int size, string fillHex, float ppu)
+    {
+        string path = $"{SpriteDir}/{name}.png";
+        ColorUtility.TryParseHtmlString(fillHex, out Color fill);
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var px = new Color[size * size];
+        float ax = size * 0.5f, ay = size - 2f; // top
+        float bx = 2f, by = 2f;                  // bottom-left
+        float cx = size - 2f, cy = 2f;           // bottom-right
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float cov = 0f;
+                for (int sy = 0; sy < 2; sy++)
+                    for (int sx = 0; sx < 2; sx++)
+                        if (PointInTri(x + 0.25f + sx * 0.5f, y + 0.25f + sy * 0.5f, ax, ay, bx, by, cx, cy)) cov += 0.25f;
+                px[y * size + x] = new Color(fill.r, fill.g, fill.b, cov);
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+        ApplySpriteImport(path, SpriteAlignment.Center, ppu);
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    private static bool PointInTri(float px, float py, float ax, float ay, float bx, float by, float cx, float cy)
+    {
+        float d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
+        float d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
+        float d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
+        bool hasNeg = d1 < 0f || d2 < 0f || d3 < 0f;
+        bool hasPos = d1 > 0f || d2 > 0f || d3 > 0f;
+        return !(hasNeg && hasPos);
     }
 
     private static void ApplySpriteImport(string path, SpriteAlignment align, float ppu)

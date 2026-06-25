@@ -119,7 +119,7 @@ public static class ParkSceneBuilder
             new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -30), new Vector2(420, 70), Color.black);
         var timerText = MakeText("TimerText", canvasGO.transform, "0.0초", 46, TextAlignmentOptions.TopRight,
             new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-40, -30), new Vector2(360, 70), Color.black);
-        MakeText("Hint", canvasGO.transform, "← → (A/D) 이동 · 마커가 초록 구간일 때 Space! (틀리면 도망)", 30, TextAlignmentOptions.Bottom,
+        MakeText("Hint", canvasGO.transform, "← → (A/D) 이동 · 동물 근처서 Space 길게 누르고, 마커 초록일 때 떼기! (틀리면 도망)", 28, TextAlignmentOptions.Bottom,
             new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(960, 50), new Color(0.1f, 0.1f, 0.1f));
 
         // HUD 다시하기 버튼(상단 중앙)
@@ -177,15 +177,15 @@ public static class ParkSceneBuilder
 
         float h = body != null ? body.bounds.size.y : 1f;
 
-        // 록온 테두리: 같은 스프라이트를 뒤에 살짝 크게 깔아 노란 실루엣 외곽선
-        const float outlineScale = 1.12f;
+        // 록온 테두리: 같은 스프라이트를 뒤에 굵게 깔아 노란 실루엣 외곽선
+        const float outlineScale = 1.22f;
         var outline = new GameObject("Outline");
         outline.transform.SetParent(go.transform, false);
         outline.transform.localScale = Vector3.one * outlineScale;
         outline.transform.localPosition = new Vector3(0f, -(outlineScale - 1f) * 0.5f * h, 0f); // 바닥피벗 보정
         var osr = outline.AddComponent<SpriteRenderer>();
         osr.sprite = body;
-        osr.color = new Color(1f, 0.85f, 0.15f, 1f);
+        osr.color = new Color(1f, 0.82f, 0f, 1f); // 진한 노랑
         osr.sortingOrder = -1;
         outline.SetActive(false);
 

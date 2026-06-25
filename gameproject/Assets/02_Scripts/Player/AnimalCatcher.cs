@@ -57,26 +57,36 @@ public class AnimalCatcher : MonoBehaviour
         if (sr != null && x != 0f) sr.flipX = x < 0f;
     }
 
+    // Space를 누르고 있는 동안 가장 가까운 동물에 록온(타이밍 바 표시),
+    // 떼는 순간 타이밍 판정 → 성공이면 잡고, 실패면 동물이 도망간다.
     private void UpdateLockAndLure()
     {
-        Animal nearest = ParkGameManager.Instance != null
-            ? ParkGameManager.Instance.GetNearestFreeAnimal(transform.position, lockRange)
-            : null;
-
-        if (nearest != locked)
-        {
-            if (locked != null) locked.SetLocked(false);
-            locked = nearest;
-            if (locked != null) locked.SetLocked(true);
-        }
-
-        // 타이밍: 마커가 성공 구간에 있을 때 Space를 "눌러" 맞추기
         var kb = Keyboard.current;
-        if (locked != null && kb != null && kb.spaceKey.wasPressedThisFrame)
+
+        if (locked == null)
         {
-            bool hit = locked.AttemptTiming(transform.position);
-            if (hit) CatchAnimal(locked);
-            // 실패하면 동물이 도망가고, 다음 프레임에 록온이 자동 해제됨
+            if (kb != null && kb.spaceKey.wasPressedThisFrame)
+            {
+                Animal cand = ParkGameManager.Instance != null
+                    ? ParkGameManager.Instance.GetNearestFreeAnimal(transform.position, lockRange)
+                    : null;
+                if (cand != null)
+                {
+                    locked = cand;
+                    locked.SetLocked(true);
+                }
+            }
+        }
+        else
+        {
+            bool released = kb == null || !kb.spaceKey.isPressed;
+            if (released)
+            {
+                bool hit = locked.AttemptTiming(transform.position);
+                if (hit) CatchAnimal(locked);
+                else locked.SetLocked(false);
+                locked = null;
+            }
         }
     }
 

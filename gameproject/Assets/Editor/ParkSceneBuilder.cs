@@ -105,7 +105,9 @@ public static class ParkSceneBuilder
         var gm = gmGO.AddComponent<ParkGameManager>();
         SetArray(gm, "cagePoints", cagePoints.ToArray());
 
-        // Canvas + EventSystem (신 Input System)
+        // ===== UI (둥근 알약 스타일) =====
+        Sprite round = MakeRoundedSprite("ui_round", 48, 16);
+
         var canvasGO = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         var canvas = canvasGO.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -115,33 +117,53 @@ public static class ParkSceneBuilder
 
         new GameObject("EventSystem", typeof(EventSystem)).AddComponent<InputSystemUIInputModule>();
 
-        var caughtText = MakeText("CaughtText", canvasGO.transform, "동물 0 / 5", 46, TextAlignmentOptions.TopLeft,
-            new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -30), new Vector2(420, 70), Color.black);
-        var timerText = MakeText("TimerText", canvasGO.transform, "0.0초", 46, TextAlignmentOptions.TopRight,
-            new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-40, -30), new Vector2(360, 70), Color.black);
-        MakeText("Hint", canvasGO.transform, "← → (A/D) 이동 · 동물 근처서 Space 길게 누르고, 마커 초록일 때 떼기! (틀리면 도망)", 28, TextAlignmentOptions.Bottom,
-            new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(960, 50), new Color(0.1f, 0.1f, 0.1f));
+        Color pillDark = new Color(0.12f, 0.14f, 0.18f, 0.82f);
+        Color textLight = new Color(0.97f, 0.97f, 0.94f);
 
-        // HUD 다시하기 버튼(상단 중앙)
-        var hudRestart = MakeButton("RestartButton", canvasGO.transform, "다시하기", new Color(0.22f, 0.45f, 0.7f, 0.95f),
-            new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -28), new Vector2(180, 60));
+        // 동물 카운트(좌상단)
+        var caughtPill = MakeSliced("CaughtPill", canvasGO.transform, round, pillDark,
+            new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -28), new Vector2(270, 78));
+        var caughtText = MakeText("Text", caughtPill.transform, "동물 0 / 5", 40, TextAlignmentOptions.Center,
+            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, textLight);
+
+        // 시간(우상단)
+        var timerPill = MakeSliced("TimerPill", canvasGO.transform, round, pillDark,
+            new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-36, -28), new Vector2(230, 78));
+        var timerText = MakeText("Text", timerPill.transform, "0.0초", 40, TextAlignmentOptions.Center,
+            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, textLight);
+
+        // 다시하기(우상단, 시간 아래)
+        var hudRestart = MakePrettyButton("RestartButton", canvasGO.transform, round, "다시하기",
+            new Color(0.32f, 0.56f, 0.86f, 0.96f),
+            new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-36, -120), new Vector2(170, 62));
         UnityEventTools.AddPersistentListener(hudRestart.GetComponent<Button>().onClick, gm.Restart);
 
-        var ending = MakePanel("EndingTransition", canvasGO.transform, new Color(0f, 0f, 0f, 0.6f),
-            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-        MakeText("Label", ending.transform, "동물들을 우리로 데려다 주는 중...", 50, TextAlignmentOptions.Center,
-            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.white);
+        // 안내(하단 알약)
+        var hintPill = MakeSliced("HintPill", canvasGO.transform, round, new Color(0.12f, 0.14f, 0.18f, 0.72f),
+            new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 34), new Vector2(1080, 70));
+        MakeText("Text", hintPill.transform, "← → (A/D) 이동  ·  동물 근처서 Space 길게 누르고, 마커가 초록일 때 떼기!", 28, TextAlignmentOptions.Center,
+            new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(-40, 0), textLight);
 
-        var clearPanel = MakePanel("ClearPanel", canvasGO.transform, new Color(0.1f, 0.3f, 0.12f, 0.9f),
+        // 엔딩 전환 오버레이
+        var ending = MakePanel("EndingTransition", canvasGO.transform, new Color(0f, 0f, 0f, 0.55f),
             Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-        MakeText("Title", clearPanel.transform, "모두 잘 보냈어요!", 70, TextAlignmentOptions.Center,
-            new Vector2(0, 0.5f), new Vector2(1, 1), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.white);
-        var clearTime = MakeText("ClearTime", clearPanel.transform, "클리어 시간: 0.0초", 44, TextAlignmentOptions.Center,
-            new Vector2(0, 0), new Vector2(1, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.white);
+        var endPill = MakeSliced("Pill", ending.transform, round, new Color(0.12f, 0.14f, 0.18f, 0.92f),
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760, 140));
+        MakeText("Text", endPill.transform, "동물들을 우리로 데려다 주는 중...", 44, TextAlignmentOptions.Center,
+            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, textLight);
 
-        // 클리어 화면 다시하기 버튼
-        var clearRestart = MakeButton("RestartButton", clearPanel.transform, "다시하기", new Color(0.2f, 0.55f, 0.32f, 1f),
-            new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 130), new Vector2(280, 84));
+        // 클리어 화면: 어두운 오버레이 + 가운데 카드
+        var clearPanel = MakePanel("ClearPanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.55f),
+            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        var card = MakeSliced("Card", clearPanel.transform, round, new Color(0.99f, 0.97f, 0.90f, 1f),
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(780, 460));
+        MakeText("Title", card.transform, "모두 잘 보냈어요!", 64, TextAlignmentOptions.Center,
+            new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(0, -54), new Vector2(0, 120), new Color(0.16f, 0.46f, 0.26f));
+        var clearTime = MakeText("ClearTime", card.transform, "클리어 시간: 0.0초", 44, TextAlignmentOptions.Center,
+            new Vector2(0, 0.5f), new Vector2(1, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 6), new Vector2(0, 80), new Color(0.27f, 0.23f, 0.18f));
+        var clearRestart = MakePrettyButton("RestartButton", card.transform, round, "다시하기",
+            new Color(0.30f, 0.62f, 0.36f, 1f),
+            new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 56), new Vector2(300, 96));
         UnityEventTools.AddPersistentListener(clearRestart.GetComponent<Button>().onClick, gm.Restart);
 
         var uiGO = new GameObject("ParkUIManager");
@@ -233,16 +255,80 @@ public static class ParkSceneBuilder
         return go;
     }
 
-    private static GameObject MakeButton(string name, Transform parent, string label, Color color,
+    private static Image MakeSliced(string name, Transform parent, Sprite sprite, Color color,
+        Vector2 aMin, Vector2 aMax, Vector2 pivot, Vector2 pos, Vector2 size)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(parent, false);
+        SetRect(go, aMin, aMax, pivot, pos, size);
+        var img = go.GetComponent<Image>();
+        img.sprite = sprite;
+        img.type = Image.Type.Sliced;
+        img.color = color;
+        return img;
+    }
+
+    private static GameObject MakePrettyButton(string name, Transform parent, Sprite sprite, string label, Color color,
         Vector2 aMin, Vector2 aMax, Vector2 pivot, Vector2 pos, Vector2 size)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
         go.transform.SetParent(parent, false);
         SetRect(go, aMin, aMax, pivot, pos, size);
-        go.GetComponent<Image>().color = color;
-        MakeText("Label", go.transform, label, 30, TextAlignmentOptions.Center,
+        var img = go.GetComponent<Image>();
+        img.sprite = sprite;
+        img.type = Image.Type.Sliced;
+        img.color = color;
+        var btn = go.GetComponent<Button>();
+        var cb = btn.colors;
+        cb.normalColor = Color.white;
+        cb.highlightedColor = new Color(1.08f, 1.08f, 1.08f, 1f);
+        cb.pressedColor = new Color(0.82f, 0.82f, 0.82f, 1f);
+        cb.fadeDuration = 0.08f;
+        btn.colors = cb;
+        MakeText("Label", go.transform, label, 32, TextAlignmentOptions.Center,
             Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.white);
         return go;
+    }
+
+    // 둥근 모서리 9-슬라이스 스프라이트 생성(UI 알약/카드/버튼용)
+    private static Sprite MakeRoundedSprite(string name, int size, int radius)
+    {
+        string path = $"{SpriteDir}/{name}.png";
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var px = new Color[size * size];
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                px[y * size + x] = RoundedInside(x, y, size, radius) ? Color.white : new Color(1f, 1f, 1f, 0f);
+        tex.SetPixels(px);
+        tex.Apply();
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        var imp = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (imp != null)
+        {
+            imp.textureType = TextureImporterType.Sprite;
+            imp.spriteImportMode = SpriteImportMode.Single;
+            imp.spritePixelsPerUnit = 100;
+            imp.filterMode = FilterMode.Bilinear;
+            imp.mipmapEnabled = false;
+            var s = new TextureImporterSettings();
+            imp.ReadTextureSettings(s);
+            s.spriteBorder = new Vector4(radius, radius, radius, radius);
+            s.spriteAlignment = (int)SpriteAlignment.Center;
+            imp.SetTextureSettings(s);
+            imp.SaveAndReimport();
+        }
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    private static bool RoundedInside(int x, int y, int size, int r)
+    {
+        float cx = Mathf.Clamp(x, r, size - 1 - r);
+        float cy = Mathf.Clamp(y, r, size - 1 - r);
+        float dx = x - cx, dy = y - cy;
+        return dx * dx + dy * dy <= (float)r * r;
     }
 
     private static TextMeshProUGUI MakeText(string name, Transform parent, string text, float size,

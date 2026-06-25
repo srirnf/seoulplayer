@@ -57,36 +57,52 @@ public class AnimalCatcher : MonoBehaviour
         if (sr != null && x != 0f) sr.flipX = x < 0f;
     }
 
-    // Space를 누르고 있는 동안 가장 가까운 동물에 록온(타이밍 바 표시),
-    // 떼는 순간 타이밍 판정 → 성공이면 잡고, 실패면 동물이 도망간다.
+    private enum Phase { Idle, Locking, Timing }
+    private Phase phase = Phase.Idle;
+
+    // 1) Space 홀드 → 가까운 동물 록온(테두리)
+    // 2) Space 떼기 → 타이밍 바 등장(마커 이동)
+    // 3) 타이밍 중 Space 누르기 → 초록이면 잡고, 아니면 도망
     private void UpdateLockAndLure()
     {
         var kb = Keyboard.current;
 
-        if (locked == null)
+        switch (phase)
         {
-            if (kb != null && kb.spaceKey.wasPressedThisFrame)
-            {
-                Animal cand = ParkGameManager.Instance != null
-                    ? ParkGameManager.Instance.GetNearestFreeAnimal(transform.position, lockRange)
-                    : null;
-                if (cand != null)
+            case Phase.Idle:
+                if (kb != null && kb.spaceKey.wasPressedThisFrame)
                 {
-                    locked = cand;
-                    locked.SetLocked(true);
+                    Animal cand = ParkGameManager.Instance != null
+                        ? ParkGameManager.Instance.GetNearestFreeAnimal(transform.position, lockRange)
+                        : null;
+                    if (cand != null)
+                    {
+                        locked = cand;
+                        locked.SetLocked(true);
+                        phase = Phase.Locking;
+                    }
                 }
-            }
-        }
-        else
-        {
-            bool released = kb == null || !kb.spaceKey.isPressed;
-            if (released)
-            {
-                bool hit = locked.AttemptTiming(transform.position);
-                if (hit) CatchAnimal(locked);
-                else locked.SetLocked(false);
-                locked = null;
-            }
+                break;
+
+            case Phase.Locking:
+                if (locked == null) { phase = Phase.Idle; break; }
+                if (kb == null || !kb.spaceKey.isPressed) // 떼면 타이밍 시작
+                {
+                    locked.SetTiming(true);
+                    phase = Phase.Timing;
+                }
+                break;
+
+            case Phase.Timing:
+                if (locked == null) { phase = Phase.Idle; break; }
+                if (kb != null && kb.spaceKey.wasPressedThisFrame) // 다시 누르면 판정
+                {
+                    bool hit = locked.AttemptTiming(transform.position);
+                    if (hit) CatchAnimal(locked);
+                    locked = null;
+                    phase = Phase.Idle;
+                }
+                break;
         }
     }
 

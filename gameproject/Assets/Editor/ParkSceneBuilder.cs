@@ -141,7 +141,7 @@ public static class ParkSceneBuilder
         // 안내(하단 알약)
         var hintPill = MakeSliced("HintPill", canvasGO.transform, round, new Color(0.12f, 0.14f, 0.18f, 0.72f),
             new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 34), new Vector2(1080, 70));
-        MakeText("Text", hintPill.transform, "← → (A/D) 이동  ·  동물 근처서 Space 길게 누르고, 마커가 초록일 때 떼기!", 28, TextAlignmentOptions.Center,
+        MakeText("Text", hintPill.transform, "← → (A/D) 이동  ·  Space 길게=록온, 떼면 타이밍 바, 마커 초록일 때 Space!", 28, TextAlignmentOptions.Center,
             new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(-40, 0), textLight);
 
         // 엔딩 전환 오버레이

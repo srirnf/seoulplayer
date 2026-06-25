@@ -38,7 +38,8 @@ public class Animal : MonoBehaviour
     private float repathTimer;
     private float fleeTimer;
     private float fleeDir;
-    private bool isLocked;
+    private bool outlineOn;   // 록온 테두리 표시 중
+    private bool timingOn;    // 타이밍 바 진행 중
     private Transform followTarget;
     private Vector3 cagePosition;
 
@@ -64,10 +65,10 @@ public class Animal : MonoBehaviour
 
     private void FreeUpdate()
     {
-        if (isLocked)
+        // 록온/타이밍 중엔 멈춤. 타이밍 중이면 마커만 움직임.
+        if (outlineOn || timingOn)
         {
-            // 록온 중엔 멈춰서 타이밍 마커만 움직임
-            if (marker != null)
+            if (timingOn && marker != null)
             {
                 float t = CurrentMarkerT();
                 marker.localPosition = new Vector3(t * trackHalfWidth, marker.localPosition.y, marker.localPosition.z);
@@ -95,15 +96,23 @@ public class Animal : MonoBehaviour
         repathTimer = repathTime;
     }
 
+    // 1단계: 록온(노란 테두리만)
     public void SetLocked(bool locked)
     {
         if (CurrentState != State.Free) locked = false;
-        isLocked = locked;
+        outlineOn = locked;
         if (lockIndicator) lockIndicator.SetActive(locked);
-        if (timingBar) timingBar.SetActive(locked);
     }
 
-    // 타이밍 시도: 성공이면 true(잡힘), 실패면 도망 후 false
+    // 2단계: 타이밍 바 표시/숨김(마커 움직임 시작)
+    public void SetTiming(bool on)
+    {
+        if (CurrentState != State.Free) on = false;
+        timingOn = on;
+        if (timingBar) timingBar.SetActive(on);
+    }
+
+    // 3단계: 타이밍 시도. 성공이면 true(잡힘), 실패면 도망 후 false
     public bool AttemptTiming(Vector3 playerPos)
     {
         if (CurrentState != State.Free) return false;
@@ -116,7 +125,8 @@ public class Animal : MonoBehaviour
     private void Flee(Vector3 from)
     {
         CurrentState = State.Fleeing;
-        isLocked = false;
+        outlineOn = false;
+        timingOn = false;
         fleeTimer = Random.Range(1f, 2f);
         fleeDir = (transform.position.x >= from.x) ? 1f : -1f;
         if (lockIndicator) lockIndicator.SetActive(false);
@@ -140,7 +150,8 @@ public class Animal : MonoBehaviour
     {
         CurrentState = State.Caught;
         followTarget = target;
-        isLocked = false;
+        outlineOn = false;
+        timingOn = false;
         if (lockIndicator) lockIndicator.SetActive(false);
         if (timingBar) timingBar.SetActive(false);
     }

@@ -35,9 +35,11 @@ public class Animal : MonoBehaviour
 
     private Transform followTarget;
     private Vector3 cagePosition;
+    private SpriteRenderer sr;
 
     private void Start()
     {
+        sr = GetComponent<SpriteRenderer>();
         homeCenter = transform.position;
         PickWanderTarget();
         if (lockIndicator) lockIndicator.SetActive(false);
@@ -60,8 +62,9 @@ public class Animal : MonoBehaviour
         if (!luredThisFrame)
         {
             repathTimer -= Time.deltaTime;
-            if (repathTimer <= 0f || (transform.position - wanderTarget).sqrMagnitude < 0.05f)
+            if (repathTimer <= 0f || Mathf.Abs(transform.position.x - wanderTarget.x) < 0.05f)
                 PickWanderTarget();
+            if (sr != null) sr.flipX = wanderTarget.x < transform.position.x;
             transform.position = Vector3.MoveTowards(transform.position, wanderTarget, wanderSpeed * Time.deltaTime);
 
             if (LureProgress > 0f)
@@ -74,8 +77,9 @@ public class Animal : MonoBehaviour
 
     private void PickWanderTarget()
     {
-        Vector2 r = Random.insideUnitCircle * wanderRadius;
-        wanderTarget = homeCenter + new Vector3(r.x, r.y, 0f);
+        // 사이드뷰: 좌우로만 배회 (y 고정)
+        float dx = Random.Range(-wanderRadius, wanderRadius);
+        wanderTarget = new Vector3(homeCenter.x + dx, homeCenter.y, 0f);
         repathTimer = repathTime;
     }
 
@@ -112,7 +116,10 @@ public class Animal : MonoBehaviour
     {
         if (followTarget == null) return;
         if (Vector3.Distance(transform.position, followTarget.position) > followSpacing)
+        {
+            if (sr != null) sr.flipX = followTarget.position.x < transform.position.x;
             transform.position = Vector3.MoveTowards(transform.position, followTarget.position, followSpeed * Time.deltaTime);
+        }
     }
 
     public void ReturnToCage(Vector3 cagePos)

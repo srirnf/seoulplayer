@@ -14,6 +14,14 @@ public class AnimalCatcher : MonoBehaviour
 
     private readonly List<Animal> caughtChain = new List<Animal>();
     private Animal locked;
+    private SpriteRenderer sr;
+    private float groundY;
+
+    private void Awake()
+    {
+        sr = GetComponent<SpriteRenderer>();
+        groundY = transform.position.y;
+    }
 
     private void Update()
     {
@@ -24,16 +32,21 @@ public class AnimalCatcher : MonoBehaviour
         UpdateLockAndLure();
     }
 
+    // 사이드뷰: 좌우로만 이동(A/D 또는 ←/→). y는 바닥 라인에 고정.
     private void Move()
     {
         var kb = Keyboard.current;
         if (kb == null) return;
 
-        float x = (kb.dKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed ? 1f : 0f);
-        float y = (kb.wKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed ? 1f : 0f);
-        Vector3 dir = new Vector3(x, y, 0f);
-        if (dir.sqrMagnitude > 1f) dir.Normalize();
-        transform.position += dir * moveSpeed * Time.deltaTime;
+        float x = ((kb.dKey.isPressed || kb.rightArrowKey.isPressed) ? 1f : 0f)
+                - ((kb.aKey.isPressed || kb.leftArrowKey.isPressed) ? 1f : 0f);
+
+        Vector3 p = transform.position;
+        p.x += x * moveSpeed * Time.deltaTime;
+        p.y = groundY;
+        transform.position = p;
+
+        if (sr != null && x != 0f) sr.flipX = x < 0f;
     }
 
     private void UpdateLockAndLure()

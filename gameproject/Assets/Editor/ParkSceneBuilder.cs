@@ -94,9 +94,8 @@ public static class ParkSceneBuilder
         for (int i = 0; i < animals.Length; i++)
         {
             float x = Mathf.Lerp(leftEdge, rightEdge, (i + 0.5f) / animals.Length);
-            float y = playY + ((i % 2 == 0) ? 0.6f : -0.4f);
             Sprite body = MakeSprite($"animal_{i}_{animals[i].name}", 46, 46, animals[i].hex, animals[i].dark);
-            BuildAnimal(animals[i].name, new Vector3(x, y, 0f), body, lockS, gaugeBg, gaugeFill);
+            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, lockS, gaugeBg, gaugeFill);
         }
 
         // 매니저
@@ -118,7 +117,7 @@ public static class ParkSceneBuilder
             new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -30), new Vector2(420, 70), Color.black);
         var timerText = MakeText("TimerText", canvasGO.transform, "0.0초", 46, TextAlignmentOptions.TopRight,
             new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-40, -30), new Vector2(360, 70), Color.black);
-        MakeText("Hint", canvasGO.transform, "WASD 이동 · 가까운 동물에 Space 꾹 눌러 꼬시기", 30, TextAlignmentOptions.Bottom,
+        MakeText("Hint", canvasGO.transform, "← → (A/D) 이동 · 가까운 동물에 Space 꾹 눌러 꼬시기", 30, TextAlignmentOptions.Bottom,
             new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(960, 50), new Color(0.1f, 0.1f, 0.1f));
 
         var ending = MakePanel("EndingTransition", canvasGO.transform, new Color(0f, 0f, 0f, 0.6f),

@@ -14,5 +14,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/01_Scenes/ParkGame.unity
     guid: 37ca719c3514f4e9f98e04809dd06224
+  - enabled: 1
+    path: "Assets/Games/\uC11C\uC6B8\uC5B4\uB9B0\uC774\uB300\uACF5\uC6D0/Scenes/ParkGame.unity"
+    guid: 088f6434529b640129ea3aaf05d7a141
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

@@ -24,8 +24,9 @@ public static class ParkSceneBuilder
         EnsureFolder("Assets", "01_Scenes");
 
         Sprite playerS = MakeSprite("keeper", 70, 130, "#3f7bd6", "#274f8a", SpriteAlignment.BottomCenter);
-        Sprite gaugeBg = MakeSprite("gauge_bg", 44, 10, "#222222", "#000000");
-        Sprite gaugeFill = MakeSprite("gauge_fill", 44, 10, "#5fd06a", "#3a9c45", SpriteAlignment.LeftCenter);
+        Sprite trackS = MakeSprite("timing_track", 120, 16, "#1e1e1e", "#000000");
+        Sprite zoneS = MakeSprite("timing_zone", 28, 16, "#5fd06a", "#3a9c45");
+        Sprite markerS = MakeSprite("timing_marker", 8, 28, "#ffffff", "#d03030");
 
         // 실제 동물 이미지 (Assets/04_Sprites/Animals/*.png)
         var animals = new (string name, string file)[]
@@ -61,7 +62,7 @@ public static class ParkSceneBuilder
         }
 
         // 플레이 가능한 바닥 영역(배경 아래쪽 길 부근) - 값을 낮춰 길에 가깝게
-        float playY = -halfH + bgH * 0.08f;
+        float playY = -halfH + bgH * 0.07f;
         float leftEdge = -halfW + 1.5f;
         float rightEdge = halfW - 1.5f;
 
@@ -96,7 +97,7 @@ public static class ParkSceneBuilder
         {
             float x = Mathf.Lerp(leftEdge, rightEdge, (i + 0.5f) / animals.Length);
             Sprite body = ImportSprite($"Assets/04_Sprites/Animals/{animals[i].file}.png", SpriteAlignment.BottomCenter, 650f, 2048);
-            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, gaugeBg, gaugeFill);
+            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, trackS, zoneS, markerS);
         }
 
         // 매니저
@@ -118,7 +119,7 @@ public static class ParkSceneBuilder
             new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -30), new Vector2(420, 70), Color.black);
         var timerText = MakeText("TimerText", canvasGO.transform, "0.0초", 46, TextAlignmentOptions.TopRight,
             new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-40, -30), new Vector2(360, 70), Color.black);
-        MakeText("Hint", canvasGO.transform, "← → (A/D) 이동 · 가까운 동물에 Space 꾹 눌러 꼬시기", 30, TextAlignmentOptions.Bottom,
+        MakeText("Hint", canvasGO.transform, "← → (A/D) 이동 · 마커가 초록 구간일 때 Space! (틀리면 도망)", 30, TextAlignmentOptions.Bottom,
             new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(960, 50), new Color(0.1f, 0.1f, 0.1f));
 
         // HUD 다시하기 버튼(상단 중앙)
@@ -165,7 +166,7 @@ public static class ParkSceneBuilder
         Debug.Log("[ParkSceneBuilder] 씬 생성 완료: " + ScenePath);
     }
 
-    private static void BuildAnimal(string name, Vector3 pos, Sprite body, Sprite gaugeBg, Sprite gaugeFill)
+    private static void BuildAnimal(string name, Vector3 pos, Sprite body, Sprite trackS, Sprite zoneS, Sprite markerS)
     {
         var go = new GameObject("Animal_" + name);
         go.transform.position = pos;
@@ -174,31 +175,50 @@ public static class ParkSceneBuilder
         sr.sortingOrder = 0;
         var animal = go.AddComponent<Animal>();
 
-        // 동물 실제 높이(바닥 피벗 기준 머리 위까지)
         float h = body != null ? body.bounds.size.y : 1f;
 
-        // 유인 게이지(머리 위)
-        var gaugeRoot = new GameObject("Gauge");
-        gaugeRoot.transform.SetParent(go.transform, false);
-        gaugeRoot.transform.localPosition = new Vector3(0f, h + 0.15f, 0f);
+        // 록온 테두리: 같은 스프라이트를 뒤에 살짝 크게 깔아 노란 실루엣 외곽선
+        const float outlineScale = 1.12f;
+        var outline = new GameObject("Outline");
+        outline.transform.SetParent(go.transform, false);
+        outline.transform.localScale = Vector3.one * outlineScale;
+        outline.transform.localPosition = new Vector3(0f, -(outlineScale - 1f) * 0.5f * h, 0f); // 바닥피벗 보정
+        var osr = outline.AddComponent<SpriteRenderer>();
+        osr.sprite = body;
+        osr.color = new Color(1f, 0.85f, 0.15f, 1f);
+        osr.sortingOrder = -1;
+        outline.SetActive(false);
 
-        var bg = new GameObject("Bg");
-        bg.transform.SetParent(gaugeRoot.transform, false);
-        var bgsr = bg.AddComponent<SpriteRenderer>();
-        bgsr.sprite = gaugeBg;
-        bgsr.sortingOrder = 5;
+        // 타이밍 바(머리 위): 트랙 + 성공구간(초록) + 마커
+        var bar = new GameObject("TimingBar");
+        bar.transform.SetParent(go.transform, false);
+        bar.transform.localPosition = new Vector3(0f, h + 0.2f, 0f);
 
-        var fill = new GameObject("Fill");
-        fill.transform.SetParent(gaugeRoot.transform, false);
-        fill.transform.localPosition = new Vector3(-0.22f, 0f, 0.01f); // bg 폭 44px=0.44, 왼쪽 끝
-        var fillsr = fill.AddComponent<SpriteRenderer>();
-        fillsr.sprite = gaugeFill;
-        fillsr.sortingOrder = 6;
+        var track = new GameObject("Track");
+        track.transform.SetParent(bar.transform, false);
+        var tsr = track.AddComponent<SpriteRenderer>();
+        tsr.sprite = trackS;
+        tsr.sortingOrder = 5;
 
-        gaugeRoot.SetActive(false);
+        var zone = new GameObject("Zone");
+        zone.transform.SetParent(bar.transform, false);
+        zone.transform.localPosition = new Vector3(0f, 0f, 0.01f);
+        var zsr = zone.AddComponent<SpriteRenderer>();
+        zsr.sprite = zoneS;
+        zsr.sortingOrder = 6;
 
-        SetRef(animal, "gaugeRoot", gaugeRoot);
-        SetRef(animal, "gaugeFill", fill.transform);
+        var marker = new GameObject("Marker");
+        marker.transform.SetParent(bar.transform, false);
+        marker.transform.localPosition = new Vector3(0f, 0f, 0.02f);
+        var msr = marker.AddComponent<SpriteRenderer>();
+        msr.sprite = markerS;
+        msr.sortingOrder = 7;
+
+        bar.SetActive(false);
+
+        SetRef(animal, "lockIndicator", outline);
+        SetRef(animal, "timingBar", bar);
+        SetRef(animal, "marker", marker.transform);
     }
 
     // ---------- 헬퍼 ----------

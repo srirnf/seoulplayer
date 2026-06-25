@@ -53,7 +53,7 @@ public class ParkGameManager : MonoBehaviour
         float bestSq = range * range;
         foreach (var a in allAnimals)
         {
-            if (a == null || a.IsCaught) continue;
+            if (a == null || !a.IsLureable) continue;
             float sq = (a.transform.position - from).sqrMagnitude;
             if (sq <= bestSq)
             {

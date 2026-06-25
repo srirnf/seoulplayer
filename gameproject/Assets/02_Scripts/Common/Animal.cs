@@ -1,41 +1,46 @@
 using UnityEngine;
 
-// 탈출한 동물 한 마리. 평소엔 배회(도망)하고, 유인 게이지가 가득 차면 꼬셔져서
-// 플레이어(또는 앞 동물)를 줄줄이 따라온다. 엔딩 때는 우리로 복귀한다.
+// 탈출한 동물. 평소 배회하고, 록온되면 멈춰서 머리 위 "타이밍 바"의 마커가 좌우로 움직인다.
+// 플레이어가 성공 구간에서 Space를 맞추면 꼬셔져 따라오고, 틀리면 1~2초 도망간다.
 public class Animal : MonoBehaviour
 {
-    public enum State { Free, Caught, Returning }
+    public enum State { Free, Fleeing, Caught, Returning }
 
-    [Header("배회(도망) 설정")]
+    [Header("배회(도망 전)")]
     [SerializeField] private float wanderSpeed = 1.5f;
     [SerializeField] private float wanderRadius = 3f;
     [SerializeField] private float repathTime = 2f;
 
-    [Header("따라오기 설정")]
+    [Header("따라오기")]
     [SerializeField] private float followSpeed = 3.5f;
     [SerializeField] private float followSpacing = 0.8f;
 
-    [Header("유인")]
-    [Tooltip("유인 안 할 때 게이지가 줄어드는 속도(초당)")]
-    [SerializeField] private float lureDecay = 0.4f;
+    [Header("도망(타이밍 실패 시)")]
+    [SerializeField] private float fleeSpeed = 4.5f;
+
+    [Header("타이밍")]
+    [SerializeField] private float markerSpeed = 1.6f;     // 마커 왕복 속도
+    [SerializeField] private float trackHalfWidth = 0.6f;  // 마커 이동 반경(월드)
+    [SerializeField] private float zoneHalfWidth = 0.14f;  // 성공 구간 반경(월드)
 
     [Header("연출 참조")]
-    [SerializeField] private GameObject lockIndicator; // 록온 표시(자동 록온 시 켜짐)
-    [SerializeField] private GameObject gaugeRoot;     // 유인 게이지 루트
-    [SerializeField] private Transform gaugeFill;      // 채워지는 막대(localScale.x)
+    [SerializeField] private GameObject lockIndicator; // 록온 테두리
+    [SerializeField] private GameObject timingBar;     // 타이밍 바 루트
+    [SerializeField] private Transform marker;         // 움직이는 마커
 
     public State CurrentState { get; private set; } = State.Free;
-    public bool IsCaught => CurrentState != State.Free;
-    public float LureProgress { get; private set; }
+    public bool IsLureable => CurrentState == State.Free;
+    public bool IsCaught => CurrentState == State.Caught || CurrentState == State.Returning;
 
+    private SpriteRenderer sr;
     private Vector3 homeCenter;
     private Vector3 wanderTarget;
     private float repathTimer;
-    private bool luredThisFrame;
-
+    private float fleeTimer;
+    private float fleeDir;
+    private bool isLocked;
     private Transform followTarget;
     private Vector3 cagePosition;
-    private SpriteRenderer sr;
 
     private void Start()
     {
@@ -43,7 +48,7 @@ public class Animal : MonoBehaviour
         homeCenter = transform.position;
         PickWanderTarget();
         if (lockIndicator) lockIndicator.SetActive(false);
-        if (gaugeRoot) gaugeRoot.SetActive(false);
+        if (timingBar) timingBar.SetActive(false);
     }
 
     private void Update()
@@ -51,6 +56,7 @@ public class Animal : MonoBehaviour
         switch (CurrentState)
         {
             case State.Free: FreeUpdate(); break;
+            case State.Fleeing: FleeUpdate(); break;
             case State.Caught: FollowUpdate(); break;
             case State.Returning: ReturnUpdate(); break;
         }
@@ -58,26 +64,32 @@ public class Animal : MonoBehaviour
 
     private void FreeUpdate()
     {
-        // 유인 중이면 멈춰서 잡히기 쉽게, 아니면 배회
-        if (!luredThisFrame)
+        if (isLocked)
         {
-            repathTimer -= Time.deltaTime;
-            if (repathTimer <= 0f || Mathf.Abs(transform.position.x - wanderTarget.x) < 0.05f)
-                PickWanderTarget();
-            if (sr != null) sr.flipX = wanderTarget.x < transform.position.x;
-            transform.position = Vector3.MoveTowards(transform.position, wanderTarget, wanderSpeed * Time.deltaTime);
-
-            if (LureProgress > 0f)
-                LureProgress = Mathf.Max(0f, LureProgress - lureDecay * Time.deltaTime);
+            // 록온 중엔 멈춰서 타이밍 마커만 움직임
+            if (marker != null)
+            {
+                float t = CurrentMarkerT();
+                marker.localPosition = new Vector3(t * trackHalfWidth, marker.localPosition.y, marker.localPosition.z);
+            }
+            return;
         }
 
-        UpdateGauge();
-        luredThisFrame = false;
+        repathTimer -= Time.deltaTime;
+        if (repathTimer <= 0f || Mathf.Abs(transform.position.x - wanderTarget.x) < 0.05f)
+            PickWanderTarget();
+        if (sr != null) sr.flipX = wanderTarget.x < transform.position.x;
+        transform.position = Vector3.MoveTowards(transform.position, wanderTarget, wanderSpeed * Time.deltaTime);
+    }
+
+    // -1 ~ 1 사이를 왕복
+    private float CurrentMarkerT()
+    {
+        return Mathf.PingPong(Time.time * markerSpeed * 2f, 2f) - 1f;
     }
 
     private void PickWanderTarget()
     {
-        // 사이드뷰: 좌우로만 배회 (y 고정)
         float dx = Random.Range(-wanderRadius, wanderRadius);
         wanderTarget = new Vector3(homeCenter.x + dx, homeCenter.y, 0f);
         repathTimer = repathTime;
@@ -85,33 +97,52 @@ public class Animal : MonoBehaviour
 
     public void SetLocked(bool locked)
     {
-        bool show = locked && CurrentState == State.Free;
-        if (lockIndicator) lockIndicator.SetActive(show);
-        if (sr != null) sr.color = show ? new Color(1f, 0.9f, 0.45f) : Color.white;
+        if (CurrentState != State.Free) locked = false;
+        isLocked = locked;
+        if (lockIndicator) lockIndicator.SetActive(locked);
+        if (timingBar) timingBar.SetActive(locked);
     }
 
-    // 플레이어가 유인할 때 매 프레임 호출. 가득 차면 true 반환.
-    public bool ApplyLure(float amount)
+    // 타이밍 시도: 성공이면 true(잡힘), 실패면 도망 후 false
+    public bool AttemptTiming(Vector3 playerPos)
     {
         if (CurrentState != State.Free) return false;
-        luredThisFrame = true;
-        LureProgress = Mathf.Min(1f, LureProgress + amount);
-        UpdateGauge();
-        return LureProgress >= 1f;
+        float x = CurrentMarkerT() * trackHalfWidth;
+        bool hit = Mathf.Abs(x) <= zoneHalfWidth;
+        if (!hit) Flee(playerPos);
+        return hit;
     }
 
-    private void UpdateGauge()
+    private void Flee(Vector3 from)
     {
-        if (gaugeRoot) gaugeRoot.SetActive(CurrentState == State.Free && LureProgress > 0.001f);
-        if (gaugeFill) gaugeFill.localScale = new Vector3(Mathf.Clamp01(LureProgress), 1f, 1f);
+        CurrentState = State.Fleeing;
+        isLocked = false;
+        fleeTimer = Random.Range(1f, 2f);
+        fleeDir = (transform.position.x >= from.x) ? 1f : -1f;
+        if (lockIndicator) lockIndicator.SetActive(false);
+        if (timingBar) timingBar.SetActive(false);
+    }
+
+    private void FleeUpdate()
+    {
+        fleeTimer -= Time.deltaTime;
+        if (sr != null) sr.flipX = fleeDir < 0f;
+        transform.position += new Vector3(fleeDir * fleeSpeed * Time.deltaTime, 0f, 0f);
+        if (fleeTimer <= 0f)
+        {
+            CurrentState = State.Free;
+            homeCenter = transform.position;
+            PickWanderTarget();
+        }
     }
 
     public void Catch(Transform target)
     {
         CurrentState = State.Caught;
         followTarget = target;
+        isLocked = false;
         if (lockIndicator) lockIndicator.SetActive(false);
-        if (gaugeRoot) gaugeRoot.SetActive(false);
+        if (timingBar) timingBar.SetActive(false);
     }
 
     private void FollowUpdate()

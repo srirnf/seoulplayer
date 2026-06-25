@@ -9,8 +9,6 @@ public class AnimalCatcher : MonoBehaviour
     [SerializeField] private float moveSpeed = 4.5f;
     [Tooltip("자동 록온 범위")]
     [SerializeField] private float lockRange = 3f;
-    [Tooltip("Space 누를 때 초당 게이지 증가량 (1이면 1초)")]
-    [SerializeField] private float lureSpeed = 0.8f;
 
     private readonly List<Animal> caughtChain = new List<Animal>();
     private Animal locked;
@@ -72,13 +70,13 @@ public class AnimalCatcher : MonoBehaviour
             if (locked != null) locked.SetLocked(true);
         }
 
+        // 타이밍: 마커가 성공 구간에 있을 때 Space를 "눌러" 맞추기
         var kb = Keyboard.current;
-        bool luring = kb != null && kb.spaceKey.isPressed;
-
-        if (locked != null && luring)
+        if (locked != null && kb != null && kb.spaceKey.wasPressedThisFrame)
         {
-            bool full = locked.ApplyLure(lureSpeed * Time.deltaTime);
-            if (full) CatchAnimal(locked);
+            bool hit = locked.AttemptTiming(transform.position);
+            if (hit) CatchAnimal(locked);
+            // 실패하면 동물이 도망가고, 다음 프레임에 록온이 자동 해제됨
         }
     }
 

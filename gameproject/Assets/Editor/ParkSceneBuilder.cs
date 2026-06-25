@@ -14,6 +14,7 @@ public static class ParkSceneBuilder
 {
     private const string SpriteDir = "Assets/04_Sprites/_ParkPlaceholder";
     private const string ScenePath = "Assets/01_Scenes/ParkGame.unity";
+    private const string BgPath = "Assets/04_Sprites/park_bg.png";
 
     [MenuItem("서울대공원/플레이 가능한 씬 생성")]
     public static void Build()
@@ -21,9 +22,7 @@ public static class ParkSceneBuilder
         EnsureFolder("Assets/04_Sprites", "_ParkPlaceholder");
         EnsureFolder("Assets", "01_Scenes");
 
-        Sprite floor = MakeSprite("park_floor", 256, 256, "#acd47a", "#9bc468");
         Sprite playerS = MakeSprite("keeper", 48, 56, "#3f7bd6", "#274f8a");
-        Sprite cageS = MakeSprite("cage", 120, 90, "#c98f5a", "#6e4a28");
         Sprite gaugeBg = MakeSprite("gauge_bg", 44, 10, "#222222", "#000000");
         Sprite gaugeFill = MakeSprite("gauge_fill", 44, 10, "#5fd06a", "#3a9c45", SpriteAlignment.LeftCenter);
         Sprite lockS = MakeSprite("lock_ring", 64, 72, "#ffd54a", "#e0a615");
@@ -37,60 +36,67 @@ public static class ParkSceneBuilder
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
+        // 배경(가로로 긴 어린이대공원)
+        Sprite bg = ImportSprite(BgPath);
+        float bgW = 40f, bgH = 8f;
+        if (bg != null) { bgW = bg.bounds.size.x; bgH = bg.bounds.size.y; }
+        float halfH = bgH * 0.5f;
+        float halfW = bgW * 0.5f;
+
+        var bgGO = new GameObject("Background");
+        var bgsr = bgGO.AddComponent<SpriteRenderer>();
+        bgsr.sprite = bg;
+        bgsr.sortingOrder = -10;
+
         Camera cam = Camera.main;
+        float camSize = halfH;
+        float halfView = camSize * (16f / 9f);
         if (cam != null)
         {
             cam.orthographic = true;
-            cam.orthographicSize = 5.5f;
-            cam.transform.position = new Vector3(0f, 0f, -10f);
+            cam.orthographicSize = camSize;
+            cam.transform.position = new Vector3(-halfW + halfView, 0f, -10f);
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.78f, 0.9f, 0.6f);
+            cam.backgroundColor = new Color(0.62f, 0.82f, 0.95f);
         }
 
-        var floorGO = new GameObject("Floor");
-        var fsr = floorGO.AddComponent<SpriteRenderer>();
-        fsr.sprite = floor;
-        fsr.drawMode = SpriteDrawMode.Tiled;
-        fsr.size = new Vector2(22f, 13f);
-        fsr.sortingOrder = -10;
+        // 플레이 가능한 바닥 영역(배경 아래쪽 길 부근)
+        float playY = -halfH + bgH * 0.22f;
+        float leftEdge = -halfW + 1.5f;
+        float rightEdge = halfW - 1.5f;
 
-        // 우리 5개 + cagePoints
+        // 우리 위치(보이지 않는 목표점 - 배경에 그려진 울타리 부근)
         var cagePoints = new List<Object>();
-        Vector3[] cagePos =
+        for (int i = 0; i < animals.Length; i++)
         {
-            new Vector3(-8f, 3.5f, 0f), new Vector3(-4f, 4f, 0f), new Vector3(0f, 4.2f, 0f),
-            new Vector3(4f, 4f, 0f), new Vector3(8f, 3.5f, 0f),
-        };
-        for (int i = 0; i < cagePos.Length; i++)
-        {
-            var cage = new GameObject($"Cage_{i}");
-            cage.transform.position = cagePos[i];
-            var csr = cage.AddComponent<SpriteRenderer>();
-            csr.sprite = cageS;
-            csr.sortingOrder = -1;
-            var pt = new GameObject("CagePoint").transform;
-            pt.SetParent(cage.transform, false);
-            cagePoints.Add(pt);
+            float x = Mathf.Lerp(leftEdge, rightEdge, (i + 0.5f) / animals.Length);
+            var cage = new GameObject($"CagePoint_{i}");
+            cage.transform.position = new Vector3(x, playY + bgH * 0.18f, 0f);
+            cagePoints.Add(cage.transform);
         }
 
-        // 플레이어
+        // 플레이어(왼쪽에서 시작)
         var player = new GameObject("Player");
-        player.transform.position = new Vector3(0f, -3f, 0f);
+        player.transform.position = new Vector3(-halfW + halfView, playY, 0f);
         var psr = player.AddComponent<SpriteRenderer>();
         psr.sprite = playerS;
         psr.sortingOrder = 2;
         player.AddComponent<AnimalCatcher>();
 
-        // 동물 5마리
-        Vector3[] spawn =
+        // 카메라가 플레이어를 좌우로 따라가도록
+        if (cam != null)
         {
-            new Vector3(-6f, -1f, 0f), new Vector3(-2f, 1f, 0f), new Vector3(2f, -1.5f, 0f),
-            new Vector3(5f, 1.5f, 0f), new Vector3(-4f, -3f, 0f),
-        };
+            var follow = cam.gameObject.AddComponent<CameraFollow>();
+            follow.Setup(player.transform, -halfW + halfView, halfW - halfView);
+        }
+
+        // 동물 5마리(배경 전체에 분산)
         for (int i = 0; i < animals.Length; i++)
         {
+            float x = Mathf.Lerp(leftEdge, rightEdge, (i + 0.5f) / animals.Length);
+            float y = playY + ((i % 2 == 0) ? 0.6f : -0.4f);
             Sprite body = MakeSprite($"animal_{i}_{animals[i].name}", 46, 46, animals[i].hex, animals[i].dark);
-            BuildAnimal(animals[i].name, spawn[i], body, lockS, gaugeBg, gaugeFill);
+            BuildAnimal(animals[i].name, new Vector3(x, y, 0f), body, lockS, gaugeBg, gaugeFill);
         }
 
         // 매니저
@@ -261,6 +267,28 @@ public static class ParkSceneBuilder
             imp.ReadTextureSettings(s);
             s.spriteAlignment = (int)align;
             imp.SetTextureSettings(s);
+            imp.SaveAndReimport();
+        }
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    // 이미 존재하는 PNG(배경)를 Sprite로 임포트
+    private static Sprite ImportSprite(string path)
+    {
+        if (!File.Exists(path))
+        {
+            Debug.LogWarning("[ParkSceneBuilder] 배경 파일 없음: " + path);
+            return null;
+        }
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        var imp = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (imp != null)
+        {
+            imp.textureType = TextureImporterType.Sprite;
+            imp.spriteImportMode = SpriteImportMode.Single;
+            imp.spritePixelsPerUnit = 100;
+            imp.maxTextureSize = 8192;   // 5472px 폭 유지
+            imp.mipmapEnabled = false;
             imp.SaveAndReimport();
         }
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);

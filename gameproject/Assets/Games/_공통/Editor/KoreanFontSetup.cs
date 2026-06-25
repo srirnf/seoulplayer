@@ -8,27 +8,38 @@ using UnityEngine;
 // → 한글 깨짐(□) 해결. TMP Essentials를 먼저 Import 한 상태여야 함.
 public static class KoreanFontSetup
 {
-    private const string FontDir = "Assets/Games/_공통/Fonts";
-    private const string TtfPath = FontDir + "/NotoSansKR-Regular.ttf";
-    private const string FontAssetPath = FontDir + "/NotoSansKR SDF.asset";
-
     [MenuItem("서울플레이업/한글 폰트 적용")]
     public static void Apply()
     {
-        var font = AssetDatabase.LoadAssetAtPath<Font>(TtfPath);
+        // 경로 하드코딩 대신 "이름으로" 폰트를 찾는다 (한글 폴더 경로 문제 회피)
+        Font font = null;
+        string ttfPath = null;
+        foreach (var guid in AssetDatabase.FindAssets("NotoSansKR-Regular t:Font"))
+        {
+            ttfPath = AssetDatabase.GUIDToAssetPath(guid);
+            font = AssetDatabase.LoadAssetAtPath<Font>(ttfPath);
+            if (font != null) break;
+        }
         if (font == null)
         {
             EditorUtility.DisplayDialog("오류",
-                $"{TtfPath} 를 찾을 수 없어요.\n08_Fonts 에 NotoSansKR-Regular.ttf 가 있는지 확인하세요.", "확인");
+                "NotoSansKR-Regular.ttf 를 못 찾았어요.\n" +
+                "1) Games/_공통/Fonts 에 폰트가 있는지\n" +
+                "2) Git LFS 로 폰트를 받았는지 (git lfs pull)\n" +
+                "확인하세요.", "확인");
             return;
         }
 
+        // 폰트와 같은 폴더에 TMP 폰트 에셋 생성
+        string fontDir = System.IO.Path.GetDirectoryName(ttfPath).Replace("\\", "/");
+        string fontAssetPath = fontDir + "/NotoSansKR SDF.asset";
+
         // 1) TMP 폰트 에셋 생성(없으면)
-        var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
+        var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(fontAssetPath);
         if (fontAsset == null)
         {
             fontAsset = TMP_FontAsset.CreateFontAsset(font); // Dynamic - 한글을 실시간 렌더
-            AssetDatabase.CreateAsset(fontAsset, FontAssetPath);
+            AssetDatabase.CreateAsset(fontAsset, fontAssetPath);
 
             // 머티리얼/아틀라스를 서브에셋으로 저장해야 폰트가 정상 보존됨
             if (fontAsset.material != null)
@@ -42,8 +53,8 @@ public static class KoreanFontSetup
                     if (tex != null) AssetDatabase.AddObjectToAsset(tex, fontAsset);
             }
             AssetDatabase.SaveAssets();
-            AssetDatabase.ImportAsset(FontAssetPath);
-            Debug.Log("[KoreanFontSetup] TMP 폰트 에셋 생성: " + FontAssetPath);
+            AssetDatabase.ImportAsset(fontAssetPath);
+            Debug.Log("[KoreanFontSetup] TMP 폰트 에셋 생성: " + fontAssetPath);
         }
 
         // 2) TMP 기본 폰트로 지정 (앞으로 새로 만드는 텍스트도 한글 OK)

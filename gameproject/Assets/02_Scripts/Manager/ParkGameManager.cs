@@ -14,6 +14,7 @@ public class ParkGameManager : MonoBehaviour
 
     public bool IsPlaying { get; private set; }
     public float Elapsed { get; private set; }
+    public int CaughtCount => caughtCount;
 
     private readonly List<Animal> allAnimals = new List<Animal>();
     private int caughtCount;

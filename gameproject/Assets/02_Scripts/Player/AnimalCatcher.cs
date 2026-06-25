@@ -115,20 +115,21 @@ public class AnimalCatcher : MonoBehaviour
 
             case Phase.Locked:
                 if (locked == null) { phase = Phase.Idle; break; }
-                if (!held) // 떼면 타이밍 시작
+                if (!held) // 떼면 랜덤 미니게임 시작
                 {
                     locked.SetLockCharge(-1f);
-                    locked.SetTiming(true);
+                    int caught = ParkGameManager.Instance != null ? ParkGameManager.Instance.CaughtCount : 0;
+                    locked.StartMiniGame(caught);
                     phase = Phase.Timing;
                 }
                 break;
 
             case Phase.Timing:
                 if (locked == null) { phase = Phase.Idle; break; }
-                if (pressed) // 초록일 때 누르면 잡기, 아니면 도망
+                int res = locked.TickMiniGame(transform.position, pressed);
+                if (res != 0) // 1=성공, 2=실패
                 {
-                    bool hit = locked.AttemptTiming(transform.position);
-                    if (hit) CatchAnimal(locked);
+                    if (res == 1) CatchAnimal(locked);
                     locked = null;
                     phase = Phase.Idle;
                 }

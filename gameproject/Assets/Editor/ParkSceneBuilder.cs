@@ -31,6 +31,7 @@ public static class ParkSceneBuilder
         Sprite trackS = MakeRoundedFill("timing_track", 660, 102, "#222831", SpriteAlignment.Center, 300f);
         Sprite zoneS = MakeRoundedFill("timing_zone", 144, 102, "#5fd06a", SpriteAlignment.Center, 300f);
         Sprite markerS = MakeRoundedFill("timing_marker", 42, 150, "#ff5a5a", SpriteAlignment.Center, 300f);
+        Sprite mashFillS = MakeRoundedFill("mash_fill", 450, 72, "#ff9a3c", SpriteAlignment.LeftCenter, 300f);
 
         // 실제 동물 이미지 (Assets/04_Sprites/Animals/*.png)
         var animals = new (string name, string file)[]
@@ -101,7 +102,7 @@ public static class ParkSceneBuilder
         {
             float x = Mathf.Lerp(leftEdge, rightEdge, (i + 0.5f) / animals.Length);
             Sprite body = ImportSprite($"Assets/04_Sprites/Animals/{animals[i].file}.png", SpriteAlignment.BottomCenter, 650f, 2048);
-            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, ringS, chargeTrackS, chargeFillS, trackS, zoneS, markerS);
+            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, ringS, chargeTrackS, chargeFillS, trackS, zoneS, markerS, mashFillS, leftEdge, rightEdge);
         }
 
         // 매니저
@@ -179,11 +180,13 @@ public static class ParkSceneBuilder
             "서울어린이대공원에서 탈출한 동물들을 다시 우리로!\n\n" +
             "· ← → (또는 A / D) 로 좌우 이동\n" +
             "· 동물 가까이서 Space 를 길게 눌러 충전 → 록온\n" +
-            "· 록온되면 Space 를 떼면 타이밍 바 등장\n" +
-            "· 빨간 마커가 초록 구간일 때 Space! → 성공하면 따라옴\n" +
-            "· 타이밍 실패 시 동물이 잠깐 도망가요\n\n" +
+            "· 떼면 미니게임이 랜덤으로 등장!\n" +
+            "   - 타이밍: 마커가 초록 구간일 때 Space\n" +
+            "   - 연타: Space 를 빠르게 눌러 게이지 채우기\n" +
+            "· 성공하면 따라오고, 실패하면 잠깐 도망가요\n" +
+            "· 동물을 모을수록 미니게임이 어려워져요!\n\n" +
             "모든 동물을 모으면 클리어! (걸린 시간 기록)",
-            30, TextAlignmentOptions.TopLeft,
+            26, TextAlignmentOptions.TopLeft,
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 10), new Vector2(840, 380), new Color(0.25f, 0.22f, 0.18f));
         // 시작 버튼(하단 고정)
         var startBtn = MakePrettyButton("StartButton", htCard.transform, round, "게임 시작",
@@ -207,7 +210,8 @@ public static class ParkSceneBuilder
     }
 
     private static void BuildAnimal(string name, Vector3 pos, Sprite body, Sprite ringS,
-        Sprite chargeTrackS, Sprite chargeFillS, Sprite trackS, Sprite zoneS, Sprite markerS)
+        Sprite chargeTrackS, Sprite chargeFillS, Sprite trackS, Sprite zoneS, Sprite markerS,
+        Sprite mashFillS, float minBound, float maxBound)
     {
         var go = new GameObject("Animal_" + name);
         go.transform.position = pos;
@@ -215,6 +219,7 @@ public static class ParkSceneBuilder
         sr.sprite = body;
         sr.sortingOrder = 0;
         var animal = go.AddComponent<Animal>();
+        animal.SetBounds(minBound, maxBound);
 
         float h = body != null ? body.bounds.size.y : 1f;
         float w = body != null ? body.bounds.size.x : 1f;
@@ -265,11 +270,29 @@ public static class ParkSceneBuilder
         msr.sprite = markerS; msr.sortingOrder = 7;
         bar.SetActive(false);
 
+        // 연타 게임 바(머리 위): 트랙 + 채워지는 막대
+        var mash = new GameObject("MashBar");
+        mash.transform.SetParent(go.transform, false);
+        mash.transform.localPosition = new Vector3(0f, h + 0.22f, 0f);
+        var mtrack = new GameObject("Track");
+        mtrack.transform.SetParent(mash.transform, false);
+        var mtsr = mtrack.AddComponent<SpriteRenderer>();
+        mtsr.sprite = chargeTrackS; mtsr.sortingOrder = 5;
+        var mfill = new GameObject("Fill");
+        mfill.transform.SetParent(mash.transform, false);
+        mfill.transform.localPosition = new Vector3(-0.75f, 0f, 0.01f);
+        var mfsr = mfill.AddComponent<SpriteRenderer>();
+        mfsr.sprite = mashFillS; mfsr.sortingOrder = 6;
+        mash.SetActive(false);
+
         SetRef(animal, "selectionRing", ring);
         SetRef(animal, "chargeRoot", charge);
         SetRef(animal, "chargeFill", cfill.transform);
         SetRef(animal, "timingBar", bar);
+        SetRef(animal, "zoneTransform", zone.transform);
         SetRef(animal, "marker", marker.transform);
+        SetRef(animal, "mashRoot", mash);
+        SetRef(animal, "mashFill", mfill.transform);
     }
 
     // ---------- 헬퍼 ----------

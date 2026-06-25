@@ -22,31 +22,32 @@
 > ⚠️ Unity 버전을 팀원 모두 **동일하게** 맞추세요. 다르면 프로젝트가 깨질 수 있습니다.
 > (버전 확인: `gameproject/ProjectSettings/ProjectVersion.txt`)
 
-## 📁 폴더 구조
+## 📁 폴더 구조 (게임별로 정리)
+
+에셋은 **서울 명소 게임별 폴더**로 나뉘어 있습니다. 각자 자기 게임 폴더 안에서 작업하세요.
 
 ```
 seoulplayer/
-├─ docs/                    # 기획·컨벤션 문서
-└─ gameproject/             # Unity 프로젝트
+├─ docs/                       # 기획·컨벤션·가이드 문서
+└─ gameproject/                # Unity 프로젝트
    ├─ Assets/
-   │  ├─ 01_Scenes/         # 씬 (.unity)
-   │  ├─ 02_Scripts/        # C# 스크립트 (기능별 하위 폴더)
-   │  │  ├─ Player/
-   │  │  ├─ Enemy/
-   │  │  ├─ UI/
-   │  │  ├─ Manager/
-   │  │  └─ Common/
-   │  ├─ 03_Prefabs/        # 프리팹
-   │  ├─ 04_Sprites/        # 이미지
-   │  ├─ 05_Animations/     # 애니메이션
-   │  ├─ 06_Audios/         # 사운드
-   │  ├─ 07_Materials/      # 머티리얼
-   │  ├─ 08_Fonts/          # 폰트
-   │  ├─ 09_Data/           # ScriptableObject / 데이터
-   │  └─ Settings/          # URP 설정 (수정 금지)
+   │  ├─ Games/                # ⭐ 모든 게임이 여기 (게임별 폴더)
+   │  │  ├─ 별마당도서관/
+   │  │  │  ├─ Scenes/         # 이 게임 씬
+   │  │  │  ├─ Scripts/        # 이 게임 스크립트
+   │  │  │  ├─ Sprites/  Prefabs/  Audios/  Data/
+   │  │  │  └─ Editor/         # 이 게임 에디터 스크립트(빌더 등)
+   │  │  ├─ 서울어린이대공원/   # (위와 동일 구성)
+   │  │  ├─ 경복궁/ 남산/ 홍대/ … # 나머지 명소(앞으로 채울 폴더)
+   │  │  └─ _공통/             # 여러 게임 공유(CameraFollow, 폰트 등)
+   │  ├─ Settings/             # URP 설정 (Unity 필수 · 수정 금지)
+   │  └─ TextMesh Pro/         # TMP (Unity 필수)
    ├─ Packages/
    └─ ProjectSettings/
 ```
+
+> 💡 게임 폴더 목록·매핑은 [Assets/Games/README.md](gameproject/Assets/Games/README.md) 참고.
+> Unity는 스크립트/씬을 **GUID로 찾으므로** 폴더 위치는 자유예요. 위 구조는 "사람이 보기 편하라고" 정한 규칙입니다.
 
 ## 🚀 처음 시작하기 (Setup)
 

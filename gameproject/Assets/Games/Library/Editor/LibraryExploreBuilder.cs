@@ -17,7 +17,7 @@ public static class LibraryExploreBuilder
     private const string ShelfPng = GameDir + "/Sprites/bookshelf.png";
     private const string ScenePath = GameDir + "/Scenes/LibraryExplore.unity";
 
-    [MenuItem("별마당도서관/2.5D 탐험 씬 생성")]
+    [MenuItem("별마당도서관/플레이 가능한 씬 생성")]
     public static void Build()
     {
         Directory.CreateDirectory(GameDir + "/Scenes");
@@ -28,9 +28,15 @@ public static class LibraryExploreBuilder
         if (pngImp != null) { pngImp.textureType = TextureImporterType.Default; pngImp.SaveAndReimport(); }
         var shelfTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ShelfPng);
 
-        // FBX: 콜라이더 생성 켜기
+        // FBX: 콜라이더 생성 + 재질을 외부로 추출(편집 가능하게)
         var fbxImp = AssetImporter.GetAtPath(FbxPath) as ModelImporter;
-        if (fbxImp != null && !fbxImp.addCollider) { fbxImp.addCollider = true; fbxImp.SaveAndReimport(); }
+        if (fbxImp != null)
+        {
+            fbxImp.addCollider = true;
+            fbxImp.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
+            fbxImp.materialLocation = ModelImporterMaterialLocation.External;
+            fbxImp.SaveAndReimport();
+        }
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -54,11 +60,12 @@ public static class LibraryExploreBuilder
         {
             var inst = (GameObject)PrefabUtility.InstantiatePrefab(fbx);
             inst.name = "BookWall";
-            inst.transform.position = new Vector3(0f, 0f, 5f);
-            // 상호작용 트리거(모델 앞)
+            inst.transform.position = new Vector3(0f, 0f, 6f);
+            FixToURP(inst); // 재질을 URP로 변환(분홍/안보임 방지)
+            // 상호작용 트리거(모델 앞, 크게)
             var zone = new GameObject("InteractZone");
-            zone.transform.position = new Vector3(0f, 1f, 3.5f);
-            var bc = zone.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(8f, 3f, 3f);
+            zone.transform.position = new Vector3(0f, 1f, 4f);
+            var bc = zone.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(14f, 4f, 4f);
             zone.AddComponent<InteractZone>();
         }
 
@@ -118,8 +125,11 @@ public static class LibraryExploreBuilder
         SetRect(info.gameObject, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(0, -40), new Vector2(-300, 70));
         info.alignment = TextAlignmentOptions.Left;
 
-        var clearP = MakeBigLabel("ClearPanel", screen.transform, "🎉 다 찾았어요!", new Color(0.1f, 0.3f, 0.15f, 0.92f));
-        var failP = MakeBigLabel("FailPanel", screen.transform, "실패…", new Color(0.3f, 0.1f, 0.1f, 0.92f));
+        // 결과 패널(시간 종료 → 점수)
+        var resultP = MakePanel("ResultPanel", screen.transform, new Color(0.1f, 0.25f, 0.15f, 0.94f),
+            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        var resultT = MakeText("T", resultP.transform, "결과", 72, Vector2.zero, Vector2.one, Color.white);
+        resultP.SetActive(false);
 
         var find = screen.AddComponent<FindBookScreen>();
         SetRef(find, "panel", screen);
@@ -127,8 +137,8 @@ public static class LibraryExploreBuilder
         SetRef(find, "buttonsParent", bpRT);
         SetRef(find, "targetThumb", thumbGO.GetComponent<RawImage>());
         SetRef(find, "infoText", info);
-        SetRef(find, "clearPanel", clearP);
-        SetRef(find, "failPanel", failP);
+        SetRef(find, "resultPanel", resultP);
+        SetRef(find, "resultText", resultT);
         screen.SetActive(false);
 
         // 플레이어 상호작용 연결
@@ -142,10 +152,33 @@ public static class LibraryExploreBuilder
         AssetDatabase.SaveAssets();
 
         EditorUtility.DisplayDialog("완료",
-            "별마당도서관 2.5D 탐험 씬 생성 완료!\n\n" +
-            "▶ Play → WASD 탐험 → 책장 앞에서 E → 책 찾기\n\n" +
-            "· FBX(BookWall) 크기/위치가 안 맞으면 인스펙터에서 Scale/Position 조정\n" +
-            "· 책 격자가 이미지와 안 맞으면 FindScreen의 Cabinets uv 조정", "확인");
+            "별마당도서관 2.5D 씬 생성 완료!\n\n" +
+            "▶ Play → WASD 탐험 → 도서관 앞에서 E → 제한시간 내 책 많이 찾기\n\n" +
+            "· FBX(BookWall) 크기/위치가 안 맞으면 인스펙터 Scale/Position 조정\n" +
+            "· 책 42칸 격자가 이미지와 안 맞으면 FindScreen의 Cabinets(좌/우 uv) 조정\n" +
+            "· 재질이 분홍/안보이면: FBX 선택 > Materials > Extract, 또는 URP 변환", "확인");
+    }
+
+    // FBX 재질을 URP/Lit 으로 변환 (URP에서 분홍/안 보이는 문제 방지)
+    private static void FixToURP(GameObject root)
+    {
+        var urp = Shader.Find("Universal Render Pipeline/Lit");
+        if (urp == null) return;
+        foreach (var rend in root.GetComponentsInChildren<Renderer>(true))
+        {
+            foreach (var m in rend.sharedMaterials)
+            {
+                if (m == null) continue;
+                if (m.shader != null && m.shader.name.Contains("Universal")) continue;
+                Texture main = m.HasProperty("_MainTex") ? m.GetTexture("_MainTex") : null;
+                Color col = m.HasProperty("_Color") ? m.GetColor("_Color") : Color.white;
+                m.shader = urp;
+                if (main != null && m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", main);
+                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", col);
+                EditorUtility.SetDirty(m);
+            }
+        }
+        AssetDatabase.SaveAssets();
     }
 
     // ---- 헬퍼 ----

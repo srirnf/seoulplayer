@@ -20,5 +20,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Games/ChildrenGrandPark/Scenes/ParkGame.unity
     guid: 088f6434529b640129ea3aaf05d7a141
+  - enabled: 1
+    path: Assets/Games/Library/Scenes/LibraryExplore.unity
+    guid: 3ae7c445e4a9445cd9c838d5520991f5
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

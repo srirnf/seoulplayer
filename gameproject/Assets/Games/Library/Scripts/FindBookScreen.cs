@@ -24,23 +24,22 @@ public class FindBookScreen : MonoBehaviour
     [SerializeField] private RectTransform buttonsParent; // shelfImage 위에 똑같이 덮는 영역
     [SerializeField] private RawImage targetThumb;        // 찾을 책(크롭)
     [SerializeField] private TMP_Text infoText;          // 안내/시간/기회
-    [SerializeField] private GameObject clearPanel;
-    [SerializeField] private GameObject failPanel;
+    [SerializeField] private GameObject resultPanel;
+    [SerializeField] private TMP_Text resultText;
 
     [Header("책장 영역(이미지에 맞게 조정)")]
     [SerializeField] private List<Cabinet> cabinets = new List<Cabinet> { new Cabinet(), new Cabinet { uv = new Rect(0.53f, 0.13f, 0.42f, 0.74f) } };
 
     [Header("난이도")]
-    [SerializeField] private int booksToFind = 5;   // 연속으로 찾아야 할 권 수
-    [SerializeField] private float timeLimit = 30f; // 제한시간(초)
-    [SerializeField] private int maxWrong = 3;      // 허용 오답 수
+    [SerializeField] private float timeLimit = 30f;      // 제한시간(초)
+    [SerializeField] private float wrongPenalty = 1.5f;  // 오답 시 시간 깎임(초)
 
     public bool IsOpen { get; private set; }
 
     private LibraryInteract owner;
     private readonly List<Rect> cellUVs = new List<Rect>();
     private int targetIndex;
-    private int found, wrong;
+    private int found;     // 찾은 책 수(점수)
     private float timeLeft;
     private bool playing;
 
@@ -54,10 +53,9 @@ public class FindBookScreen : MonoBehaviour
         owner = from;
         IsOpen = true;
         if (panel) panel.SetActive(true);
-        if (clearPanel) clearPanel.SetActive(false);
-        if (failPanel) failPanel.SetActive(false);
+        if (resultPanel) resultPanel.SetActive(false);
 
-        found = 0; wrong = 0; timeLeft = timeLimit; playing = true;
+        found = 0; timeLeft = timeLimit; playing = true;
         BuildCells();
         NextTarget();
         UpdateInfo();
@@ -81,7 +79,7 @@ public class FindBookScreen : MonoBehaviour
         if (playing)
         {
             timeLeft -= Time.deltaTime;
-            if (timeLeft <= 0f) { timeLeft = 0f; Lose(); }
+            if (timeLeft <= 0f) { timeLeft = 0f; EndGame(); }
             UpdateInfo();
         }
     }
@@ -141,15 +139,15 @@ public class FindBookScreen : MonoBehaviour
         if (!playing) return;
         if (index == targetIndex)
         {
-            found++;
-            if (found >= booksToFind) Win();
-            else { NextTarget(); UpdateInfo(); }
+            found++;            // 점수 +1, 정답 책을 새로 바꿈
+            NextTarget();
+            UpdateInfo();
         }
         else
         {
-            wrong++;
-            if (wrong >= maxWrong) Lose();
-            else { StopAllCoroutines(); StartCoroutine(Flash()); UpdateInfo(); }
+            timeLeft = Mathf.Max(0f, timeLeft - wrongPenalty); // 오답 = 시간 깎임
+            StopAllCoroutines(); StartCoroutine(Flash());
+            UpdateInfo();
         }
     }
 
@@ -161,18 +159,13 @@ public class FindBookScreen : MonoBehaviour
     private void UpdateInfo()
     {
         if (!infoText) return;
-        infoText.text = $"이 책을 찾으세요!   {found} / {booksToFind}   ·   ⏱ {Mathf.CeilToInt(timeLeft)}초   ·   기회 {maxWrong - wrong}";
+        infoText.text = $"이 책을 찾으세요!   찾은 책 {found}권   ·   ⏱ {Mathf.CeilToInt(timeLeft)}초";
     }
 
-    private void Win()
+    private void EndGame()
     {
         playing = false;
-        if (clearPanel) clearPanel.SetActive(true);
-    }
-
-    private void Lose()
-    {
-        playing = false;
-        if (failPanel) failPanel.SetActive(true);
+        if (resultPanel) resultPanel.SetActive(true);
+        if (resultText) resultText.text = $"시간 종료!\n{found}권 찾았어요!";
     }
 }

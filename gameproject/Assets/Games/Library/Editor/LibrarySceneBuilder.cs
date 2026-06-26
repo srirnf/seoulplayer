@@ -13,7 +13,7 @@ using UnityEngine.UI;
 // 진짜 에셋은 나중에 04_Sprites 의 스프라이트만 교체하면 된다.
 public static class LibrarySceneBuilder
 {
-    private const string GameDir = "Assets/Games/별마당도서관";
+    private const string GameDir = "Assets/Games/Library";
     private const string SpriteDir = GameDir + "/Sprites/_Placeholder";
     private const string DataDir = GameDir + "/Data/_Generated";
     private const string PrefabPath = GameDir + "/Prefabs/BookButton.prefab";

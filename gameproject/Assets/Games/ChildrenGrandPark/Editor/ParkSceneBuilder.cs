@@ -13,7 +13,7 @@ using UnityEngine.UI;
 // 임시 에셋(사육사/동물/우리/게이지)도 자동 생성해 연결한다. 진짜 에셋은 나중에 교체.
 public static class ParkSceneBuilder
 {
-    private const string GameDir = "Assets/Games/서울어린이대공원";
+    private const string GameDir = "Assets/Games/ChildrenGrandPark";
     private const string SpriteDir = GameDir + "/Sprites/_ParkPlaceholder";
     private const string ScenePath = GameDir + "/Scenes/ParkGame.unity";
     private const string BgPath = GameDir + "/Sprites/park_bg.png";

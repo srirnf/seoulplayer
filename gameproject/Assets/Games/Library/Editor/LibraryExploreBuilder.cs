@@ -28,13 +28,11 @@ public static class LibraryExploreBuilder
         if (pngImp != null) { pngImp.textureType = TextureImporterType.Default; pngImp.SaveAndReimport(); }
         var shelfTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ShelfPng);
 
-        // FBX: 콜라이더 생성 + 재질을 외부로 추출(편집 가능하게)
+        // FBX: 콜라이더 생성
         var fbxImp = AssetImporter.GetAtPath(FbxPath) as ModelImporter;
-        if (fbxImp != null)
+        if (fbxImp != null && !fbxImp.addCollider)
         {
             fbxImp.addCollider = true;
-            fbxImp.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
-            fbxImp.materialLocation = ModelImporterMaterialLocation.External;
             fbxImp.SaveAndReimport();
         }
 
@@ -159,24 +157,37 @@ public static class LibraryExploreBuilder
             "· 재질이 분홍/안보이면: FBX 선택 > Materials > Extract, 또는 URP 변환", "확인");
     }
 
-    // FBX 재질을 URP/Lit 으로 변환 (URP에서 분홍/안 보이는 문제 방지)
+    // FBX 재질이 URP에서 안 보이면, 텍스처를 가져와 새 URP/Lit 재질을 만들어 입힌다.
     private static void FixToURP(GameObject root)
     {
         var urp = Shader.Find("Universal Render Pipeline/Lit");
         if (urp == null) return;
+        string matDir = GameDir + "/Materials";
+        Directory.CreateDirectory(matDir);
+        AssetDatabase.Refresh();
+
+        var cache = new System.Collections.Generic.Dictionary<Material, Material>();
         foreach (var rend in root.GetComponentsInChildren<Renderer>(true))
         {
-            foreach (var m in rend.sharedMaterials)
+            var src = rend.sharedMaterials;
+            var dst = new Material[src.Length];
+            for (int i = 0; i < src.Length; i++)
             {
-                if (m == null) continue;
-                if (m.shader != null && m.shader.name.Contains("Universal")) continue;
-                Texture main = m.HasProperty("_MainTex") ? m.GetTexture("_MainTex") : null;
-                Color col = m.HasProperty("_Color") ? m.GetColor("_Color") : Color.white;
-                m.shader = urp;
-                if (main != null && m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", main);
-                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", col);
-                EditorUtility.SetDirty(m);
+                var m = src[i];
+                if (m == null) { dst[i] = null; continue; }
+                if (m.shader != null && m.shader.name.Contains("Universal")) { dst[i] = m; continue; }
+                if (!cache.TryGetValue(m, out var nm))
+                {
+                    nm = new Material(urp);
+                    if (m.mainTexture != null) nm.SetTexture("_BaseMap", m.mainTexture);
+                    if (m.HasProperty("_Color")) nm.SetColor("_BaseColor", m.GetColor("_Color"));
+                    string path = AssetDatabase.GenerateUniqueAssetPath($"{matDir}/{m.name}_URP.mat");
+                    AssetDatabase.CreateAsset(nm, path);
+                    cache[m] = nm;
+                }
+                dst[i] = nm;
             }
+            rend.sharedMaterials = dst;
         }
         AssetDatabase.SaveAssets();
     }

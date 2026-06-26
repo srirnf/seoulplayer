@@ -76,6 +76,9 @@ crashlytics-build.properties
 # Unity 캐시(gameproject/Library, Temp)만 무시. (Games/Library 게임폴더는 무시 안 함!)
 /gameproject/[Ll]ibrary/
 /gameproject/[Tt]emp/
+# 개인 에디터 설정/레이아웃(.dwlt 등) — 사람마다 달라 머지 충돌 유발. 추적 금지.
+# (위 /[Uu]ser[Ss]ettings/ 는 루트 기준이라 gameproject/ 경로를 따로 박음)
+/gameproject/[Uu]ser[Ss]ettings/
 
 # macOS
 .DS_Store

@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BookData
   id: book_04
   title: "\uCCAD\uB85D \uCC45"
-  spineSprite: {fileID: 0}
+  spineSprite: {fileID: 21300000, guid: ea948ae9afe8943e99e80de52ebc15fd, type: 3}
   features: "\uCCAD\uB85D\uC0C9 \uCC45"

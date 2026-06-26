@@ -73,8 +73,9 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
-**/[Ll]ibrary/
-**/[Tt]emp/
+# Unity 캐시(gameproject/Library, Temp)만 무시. (Games/Library 게임폴더는 무시 안 함!)
+/gameproject/[Ll]ibrary/
+/gameproject/[Tt]emp/
 
 # macOS
 .DS_Store

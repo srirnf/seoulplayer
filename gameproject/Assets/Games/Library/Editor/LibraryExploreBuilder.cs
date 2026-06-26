@@ -54,35 +54,46 @@ public static class LibraryExploreBuilder
         floor.name = "Floor";
         floor.transform.localScale = new Vector3(10f, 1f, 10f);
 
-        // FBX 배치
-        var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(FbxPath);
-        if (fbx != null)
+        // 상호작용 영역은 무조건 하나 생성(FBX가 실패해도 F는 작동)
+        var zone = new GameObject("InteractZone");
+        zone.transform.position = new Vector3(0f, 4f, 18f);
+        var bc = zone.AddComponent<BoxCollider>(); bc.isTrigger = true;
+        bc.size = new Vector3(80f, 30f, 60f);
+        zone.AddComponent<InteractZone>();
+
+        // FBX 배치 (실패해도 나머지 씬은 정상 생성되게 try/catch)
+        try
         {
-            var inst = (GameObject)PrefabUtility.InstantiatePrefab(fbx);
-            inst.name = "BookWall";
-            FixToURP(inst); // 재질을 URP로
-
-            // 모델 실제 크기를 측정해 "큰 도서관"으로 자동 스케일 + 바닥에 앉히고 앞쪽 배치
-            var rends = inst.GetComponentsInChildren<Renderer>();
-            if (rends.Length > 0)
+            var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(FbxPath);
+            if (fbx != null)
             {
-                Bounds b = rends[0].bounds;
-                for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
-                float maxDim = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
-                if (maxDim > 0.0001f) inst.transform.localScale *= (40f / maxDim); // 최대 치수 40유닛
+                var inst = (GameObject)PrefabUtility.InstantiatePrefab(fbx);
+                inst.name = "BookWall";
+                FixToURP(inst);
 
-                b = rends[0].bounds;
-                for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
-                inst.transform.position += new Vector3(-b.center.x, -b.min.y, 22f - b.center.z); // x중앙, 바닥 y0, 중심 z22
+                var rends = inst.GetComponentsInChildren<Renderer>();
+                if (rends.Length > 0)
+                {
+                    Bounds b = rends[0].bounds;
+                    for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+                    float maxDim = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
+                    if (maxDim > 0.0001f) inst.transform.localScale *= (40f / maxDim);
 
-                b = rends[0].bounds;
-                for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
-                var zone = new GameObject("InteractZone");
-                zone.transform.position = b.center;
-                var bc = zone.AddComponent<BoxCollider>(); bc.isTrigger = true;
-                bc.size = b.size + new Vector3(10f, 10f, 10f);
-                zone.AddComponent<InteractZone>();
+                    b = rends[0].bounds;
+                    for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+                    inst.transform.position += new Vector3(-b.center.x, -b.min.y, 18f - b.center.z);
+
+                    b = rends[0].bounds;
+                    for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+                    zone.transform.position = b.center;
+                    bc.size = b.size + new Vector3(10f, 10f, 10f);
+                }
             }
+            else Debug.LogWarning("[LibraryExploreBuilder] FBX를 못 찾음: " + FbxPath);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("[LibraryExploreBuilder] FBX 처리 중 오류(나머지는 정상 생성): " + e.Message);
         }
 
         // 플레이어
@@ -197,8 +208,11 @@ public static class LibraryExploreBuilder
                 if (!cache.TryGetValue(m, out var nm))
                 {
                     nm = new Material(urp);
-                    if (m.mainTexture != null) nm.SetTexture("_BaseMap", m.mainTexture);
-                    if (m.HasProperty("_Color")) nm.SetColor("_BaseColor", m.GetColor("_Color"));
+                    Texture tex = m.mainTexture;
+                    if (tex == null && m.HasProperty("_BaseMap")) tex = m.GetTexture("_BaseMap");
+                    if (tex == null && m.HasProperty("_MainTex")) tex = m.GetTexture("_MainTex");
+                    if (tex != null) nm.SetTexture("_BaseMap", tex);
+                    nm.SetColor("_BaseColor", Color.white); // 텍스처를 풀 밝기로(원본 어두운 색 무시)
                     string path = AssetDatabase.GenerateUniqueAssetPath($"{matDir}/{m.name}_URP.mat");
                     AssetDatabase.CreateAsset(nm, path);
                     cache[m] = nm;

@@ -2,6 +2,13 @@ using UnityEngine;
 
 public class bukhansanmaincharacter : MonoBehaviour
 {
+    void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Stone"))
+        {
+            Debug.Log("암석과 충돌!");
+        }
+    }
     [Header("이동 속도 설정")]
     public float moveSpeed = 5f;
 
@@ -22,6 +29,7 @@ public class bukhansanmaincharacter : MonoBehaviour
 
     void Update()
     {
+        //Debug.Log(transform.position);
         // 키보드 입력 받기 (WASD 또는 방향키)
         // X축: Left/Right (-1 ~ 1), Y축: Down/Up (-1 ~ 1)
         moveInput.x = Input.GetAxisRaw("Horizontal");

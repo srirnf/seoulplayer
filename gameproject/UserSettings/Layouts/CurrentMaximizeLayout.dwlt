@@ -250,13 +250,15 @@ MonoBehaviour:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
       m_SelectedIDs:
-      - m_Data: 51846
+      - m_Data: -46108
       m_LastClickedID:
-        m_Data: 51846
+        m_Data: -46108
       m_ExpandedIDs:
-      - m_Data: -14476
-      - m_Data: -11400
-      - m_Data: -1404
+      - m_Data: -62196
+      - m_Data: -29550
+      - m_Data: -29124
+      - m_Data: -26040
+      - m_Data: -1362
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1011,7 +1013,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Games/Bukhansan/Scenes
+    - Assets/Games/Bukhansan/Scripts
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1021,7 +1023,7 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Games/Bukhansan/Scenes
+  - Assets/Games/Bukhansan/Scripts
   m_LastFoldersGridSize: -1
   m_LastProjectPath: C:\Users\qwert\Documents\GitHub\seoulplayer\gameproject
   m_LockTracker:
@@ -1030,14 +1032,14 @@ MonoBehaviour:
   m_FolderTreeState:
     scrollPos: {x: 0, y: 107.33331}
     m_SelectedIDs:
-    - m_Data: 48918
+    - m_Data: 48982
     m_LastClickedID:
-      m_Data: 48918
+      m_Data: 48982
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 48610
-    - m_Data: 48898
-    - m_Data: 48906
+    - m_Data: 48670
+    - m_Data: 48962
+    - m_Data: 48970
     - m_Data: 1000000000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
@@ -1072,7 +1074,8 @@ MonoBehaviour:
       m_Data: 0
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 48610
+    - m_Data: 48670
+    - m_Data: 1000000000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1101,10 +1104,10 @@ MonoBehaviour:
       m_ResourceFile: 
   m_ListAreaState:
     m_SelectedInstanceIDs:
-    - m_Data: 51846
+    - m_Data: -46108
     m_LastClickedEntityId:
-      m_Data: 51846
-    m_HadKeyboardFocusLastEvent: 1
+      m_Data: -46108
+    m_HadKeyboardFocusLastEvent: 0
     m_ExpandedInstanceIDs:
     - m_Data: 51790
     m_RenameOverlay:
@@ -1158,10 +1161,10 @@ MonoBehaviour:
     m_TextWithWhitespace: "Console\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 0
-    y: 624
-    width: 1167.6666
-    height: 348.6667
+    x: 830
+    y: 626
+    width: 598.3333
+    height: 345.33337
   m_SerializedDataModeController:
     m_DataMode: 0
     m_PreferredDataMode: 0

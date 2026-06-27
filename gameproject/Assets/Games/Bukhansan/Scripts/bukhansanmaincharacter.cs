@@ -10,6 +10,7 @@ public class bukhansanmaincharacter : MonoBehaviour
     if (collision.gameObject.CompareTag("Stone"))
     {
         playerHP.TakeDamage(1);
+        //Destroy(collision.gameObject);
     }
     }
     [Header("이동 속도 설정")]
@@ -38,7 +39,7 @@ public class bukhansanmaincharacter : MonoBehaviour
     {
         float progress = Mathf.InverseLerp(startY, goalY, transform.position.y);
         toph.value = progress;
-        //Debug.Log(transform.position);
+        // Debug.Log(transform.position);
         // 키보드 입력 받기 (WASD 또는 방향키)
         // X축: Left/Right (-1 ~ 1), Y축: Down/Up (-1 ~ 1)
         moveInput.x = Input.GetAxisRaw("Horizontal");

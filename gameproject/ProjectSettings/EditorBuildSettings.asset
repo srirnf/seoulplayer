@@ -5,16 +5,16 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Games/Library/Scenes/LibraryGame.unity
     guid: 448cc01f478fb429e9cf00a479dc4ae6
-  - enabled: 1
+  - enabled: 0
     path: Assets/01_Scenes/LibraryGame.unity
     guid: fffb0ab0821524449b8e9408c96d9d32
-  - enabled: 1
+  - enabled: 0
     path: Assets/01_Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
+  - enabled: 0
     path: Assets/01_Scenes/ParkGame.unity
     guid: 37ca719c3514f4e9f98e04809dd06224
   - enabled: 1

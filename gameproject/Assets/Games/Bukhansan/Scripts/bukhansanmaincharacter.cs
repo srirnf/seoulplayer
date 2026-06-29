@@ -11,6 +11,10 @@ public class bukhansanmaincharacter : MonoBehaviour
     {
         playerHP.TakeDamage(1);
         Destroy(collision.gameObject);
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlayPlayerHit();
+        }
     }
     }
     [Header("이동 속도 설정")]

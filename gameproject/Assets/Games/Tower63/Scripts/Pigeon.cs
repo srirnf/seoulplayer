@@ -37,7 +37,7 @@ public class Pigeon : MonoBehaviour
     {
         // 1. 부딪힌 물체의 이름이 정확히 "player" 이고
         // 2. 부딪힌 부위가 손잡이 막대가 아닌 '진짜 털 부분(BoxCollider2D)' 일 때만 작동!
-        if (collision.gameObject.name == "player" && collision is BoxCollider2D)
+        if (collision.CompareTag("Player") && collision is BoxCollider2D)
         {
             if (GameManager.instance != null)
             {

@@ -55,7 +55,7 @@ public class Stain : MonoBehaviour
     // 청소솔의 Collider(털 부분)가 들어왔을 때 조준 상태 ON
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.name == "player")
+        if (collision.CompareTag("Player"))
         {
             isPlayerTouching = true;
         }
@@ -64,7 +64,7 @@ public class Stain : MonoBehaviour
     // 청소솔이 조준 범위를 벗어났을 때 조준 상태 OFF
     private void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.gameObject.name == "player")
+        if (collision.CompareTag("Player"))
         {
             isPlayerTouching = false;
         }
